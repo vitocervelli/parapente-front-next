@@ -119,6 +119,9 @@ export default async function AdminReservasPage({ searchParams }: PageProps<"/ad
               : `${porRevisar} ${porRevisar === 1 ? "comprobante espera" : "comprobantes esperan"} tu revisión.`}
           </p>
         </div>
+        <Link href="/admin/reservas/nueva" className="adm-btn adm-btn--primary">
+          + Nueva reserva
+        </Link>
       </div>
 
       {vencidas > 0 && !activo.overdue && (

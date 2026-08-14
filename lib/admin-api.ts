@@ -276,6 +276,34 @@ export function deleteSlot(id: number) {
 
 // ── Reservas ────────────────────────────────────────────────────────────────
 
+/** Alta de una reserva desde el panel (cliente que llama por teléfono). */
+export type CreateAdminBookingInput = {
+  customer: { email: string; fullName: string | null; phone: string | null };
+  contactPhone: string | null;
+  note: string | null;
+  lines: {
+    serviceId: number;
+    slotId: number;
+    quantity: number;
+    companionCount: number;
+    attendees: {
+      fullName: string;
+      idNumber: string;
+      email: string;
+      phone?: string;
+      weightKg?: string;
+      extraIds: number[];
+    }[];
+  }[];
+};
+
+export function createAdminBooking(input: CreateAdminBookingInput) {
+  return request<AdminBooking>("/api/admin/bookings", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function listBookings(statuses: string[] = []): Promise<AdminBooking[]> {
   const query = statuses.length > 0 ? `?status=${statuses.join(",")}` : "";
   const res = await request<AdminBooking[]>(`/api/admin/bookings${query}`);

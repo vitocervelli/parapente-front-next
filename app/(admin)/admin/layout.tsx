@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "./actions";
+import { AdminNav } from "./AdminNav";
 import { getSession } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -15,32 +16,36 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await getSession();
   const isAdmin = session?.isAdmin ?? false;
 
+  if (!isAdmin) {
+    return (
+      <div className="adm adm--bare">
+        <main className="adm__main">{children}</main>
+      </div>
+    );
+  }
+
   return (
     <div className="adm">
-      {isAdmin && (
-        <header className="adm__bar">
-          <Link href="/admin" className="adm__brand">
-            Parapente Bella Vista <span>Panel</span>
+      <aside className="adm__side">
+        <Link href="/admin" className="adm__brand">
+          <span className="adm__brand-name">Parapente Bella Vista</span>
+          <span className="adm__brand-tag">Panel de administración</span>
+        </Link>
+
+        <AdminNav />
+
+        <div className="adm__side-foot">
+          <Link href="/" target="_blank" rel="noopener" className="adm__side-link">
+            Ver la web ↗
           </Link>
-          <nav className="adm__nav">
-            <Link href="/admin">Servicios</Link>
-            <Link href="/admin/reservas">Reservas</Link>
-            <Link href="/admin/localidades">Localidades</Link>
-            <Link href="/admin/disponibilidad">Disponibilidad</Link>
-            <Link href="/admin/inclusiones">Catálogo</Link>
-            <Link href="/admin/extras">Extras</Link>
-            <Link href="/admin/ajustes">Ajustes</Link>
-            <Link href="/" target="_blank" rel="noopener">
-              Ver la web ↗
-            </Link>
-            <form action={logoutAction}>
-              <button type="submit" className="adm__logout">
-                Salir
-              </button>
-            </form>
-          </nav>
-        </header>
-      )}
+          <form action={logoutAction}>
+            <button type="submit" className="adm__logout">
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </aside>
+
       <main className="adm__main">{children}</main>
     </div>
   );

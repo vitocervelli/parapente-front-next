@@ -2,14 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getAvailability, type AvailabilityDay } from "@/lib/availability";
 import {
   acceptProof,
+  createAdminBooking,
   rejectProof,
   transitionBooking,
   UnauthorizedError,
   updateBooking,
   updateProof,
   type BookingEdit,
+  type CreateAdminBookingInput,
 } from "@/lib/admin-api";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -92,4 +95,31 @@ export async function transitionBookingAction(
   note: string | null,
 ): Promise<Result> {
   return run(bookingId, () => transitionBooking(bookingId, action, note?.trim() || null));
+}
+
+/** Disponibilidad (franjas abiertas con sitio) de una zona, para el alta manual. */
+export async function fetchDisponibilidadAction(
+  location: string,
+  from: string,
+  to: string,
+): Promise<AvailabilityDay[]> {
+  return getAvailability(from, to, location);
+}
+
+/** Crea una reserva desde el panel (cliente por teléfono). */
+export async function crearReservaAdminAction(
+  input: CreateAdminBookingInput,
+): Promise<{ ok: true; reference: string } | { ok: false; error: string }> {
+  try {
+    const result = await createAdminBooking(input);
+    if (!result.ok) {
+      return { ok: false, error: Object.values(result.errors)[0] ?? "No se pudo crear la reserva." };
+    }
+    revalidatePath("/admin/reservas");
+    revalidatePath("/cuenta");
+    return { ok: true, reference: result.data.reference };
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
 }
