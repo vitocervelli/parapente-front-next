@@ -8,8 +8,8 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button type="submit" className="adm-btn adm-btn--primary" disabled={pending}>
-      {pending ? "Entrando…" : "Entrar"}
+    <button type="submit" className="adm-btn adm-btn--primary adm-login__entrar" disabled={pending}>
+      {pending ? "Entrando…" : "Entrar al panel"}
     </button>
   );
 }

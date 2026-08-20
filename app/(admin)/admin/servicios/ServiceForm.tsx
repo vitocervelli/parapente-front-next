@@ -48,7 +48,7 @@ function ImageField({
   label: string;
   name: string;
   initial: string | null;
-  folder: "services" | "flyers";
+  folder: "services";
 }) {
   const [path, setPath] = useState(initial ?? "");
   const [busy, setBusy] = useState(false);
@@ -236,20 +236,10 @@ export function ServiceForm({ service, items, extras, locations, action }: Props
             <span className="adm-hint">Cuántos vuelan, y por tanto cuántos asistentes se piden.</span>
           </label>
 
-          <label className="adm-field">
-            <span>Plazas que ocupa</span>
-            <input
-              type="number"
-              name="seatsPerBooking"
-              min={1}
-              max={20}
-              defaultValue={service?.seatsPerBookingRaw ?? ""}
-              placeholder={String(service?.seatsPerBooking ?? 1)}
-            />
-            <span className="adm-hint">
-              Cuánto cupo descuenta del horario. Vacío = igual que el nº de personas.
-            </span>
-          </label>
+          {/* «Plazas que ocupa» se ocultó del formulario: siempre se deriva del
+              nº de personas. Se conserva el valor guardado por si el servicio
+              tuviera una excepción, sin mostrarlo ni poder cambiarlo aquí. */}
+          <input type="hidden" name="seatsPerBooking" defaultValue={service?.seatsPerBookingRaw ?? ""} />
 
           <label className="adm-field">
             <span>Nota de precio</span>
@@ -280,12 +270,6 @@ export function ServiceForm({ service, items, extras, locations, action }: Props
             name="image"
             initial={service?.image ?? null}
             folder="services"
-          />
-          <ImageField
-            label="Flyer de la promoción"
-            name="flyer"
-            initial={service?.flyer ?? null}
-            folder="flyers"
           />
         </div>
       </section>
@@ -482,7 +466,7 @@ export function ServiceForm({ service, items, extras, locations, action }: Props
 
       <div className="adm-actions">
         <SubmitButton />
-        <Link href="/admin" className="adm-btn adm-btn--ghost">
+        <Link href="/admin/servicios" className="adm-btn adm-btn--ghost">
           Cancelar
         </Link>
       </div>

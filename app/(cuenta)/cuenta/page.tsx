@@ -68,6 +68,12 @@ export default async function MisReservasPage() {
 
               <footer className="res-card__pie">
                 <span className="res-card__total">{r.total.display}</span>
+                {r.media.length > 0 && (
+                  <Link href={`/cuenta/reservas/${r.reference}`} className="res-card__accion">
+                    📷 {r.media.length}{" "}
+                    {r.media.length === 1 ? "recuerdo de tu vuelo" : "recuerdos de tu vuelo"} →
+                  </Link>
+                )}
                 {r.status === "pending_payment" && (
                   <Link href={`/cuenta/reservas/${r.reference}`} className="res-card__accion">
                     Subir comprobante →

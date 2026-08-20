@@ -2,9 +2,17 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { deleteItemAction, saveItemAction, type FormState } from "../actions";
-import { ICON_KEYS, InclusionIcon } from "@/components/ds/InclusionIcon";
+import {
+  deleteItemAction,
+  reorderItemsAction,
+  saveItemAction,
+  uploadImageAction,
+  type FormState,
+} from "../actions";
+import { MoveButtons, SortableList } from "../SortableList";
+import { InclusionIcon } from "@/components/ds/InclusionIcon";
 import type { AdminItem } from "@/lib/admin-api";
+import { BACKEND_URL } from "@/lib/api";
 
 function SaveButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -19,7 +27,25 @@ function SaveButton({ label }: { label: string }) {
 function ItemForm({ item, onDone }: { item: AdminItem | null; onDone?: () => void }) {
   const action = saveItemAction.bind(null, item?.id ?? null);
   const [state, formAction] = useActionState<FormState, FormData>(action, null);
-  const [icon, setIcon] = useState(item?.icon ?? "check");
+  const [iconPath, setIconPath] = useState(item?.iconPath ?? "");
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorIcono, setErrorIcono] = useState<string | null>(null);
+
+  async function subirIcono(file: File) {
+    setSubiendo(true);
+    setErrorIcono(null);
+
+    const data = new FormData();
+    data.append("file", file);
+    const result = await uploadImageAction("icons", data);
+
+    if (result.ok) {
+      setIconPath(result.path);
+    } else {
+      setErrorIcono(result.error);
+    }
+    setSubiendo(false);
+  }
 
   return (
     <form action={formAction} className="adm-item-form">
@@ -37,24 +63,40 @@ function ItemForm({ item, onDone }: { item: AdminItem | null; onDone?: () => voi
         </label>
 
         <label className="adm-field">
-          <span>Icono</span>
-          <select name="icon" value={icon} onChange={(e) => setIcon(e.target.value)}>
-            {ICON_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="adm-field">
           <span>Orden</span>
           <input type="number" name="position" defaultValue={item?.position ?? 0} />
         </label>
+      </div>
 
-        <span className="adm-item-form__preview">
-          <InclusionIcon name={icon} />
-        </span>
+      {/* El icono es una imagen subida; la clave antigua viaja oculta como reserva. */}
+      <input type="hidden" name="icon" value={item?.icon ?? "check"} />
+      <div className="adm-field">
+        <span>Icono</span>
+        <input type="hidden" name="iconPath" value={iconPath} />
+        <div className="adm-upload">
+          <span className="adm-item-form__preview">
+            {iconPath ? (
+              // eslint-disable-next-line @next/next/no-img-element -- vista previa directa, sin optimizar
+              <img src={`${BACKEND_URL}${iconPath}`} alt="Icono del elemento" />
+            ) : (
+              <InclusionIcon name={item?.icon ?? "check"} />
+            )}
+          </span>
+          <div className="adm-upload__controls">
+            <input
+              type="file"
+              accept="image/png,image/webp,image/svg+xml,image/jpeg"
+              disabled={subiendo}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void subirIcono(file);
+              }}
+            />
+            {subiendo && <span className="adm-hint">Subiendo…</span>}
+          </div>
+        </div>
+        <span className="adm-hint">PNG, WebP o SVG cuadrado. Sube otro archivo para cambiarlo.</span>
+        {errorIcono && <span className="adm-hint adm-hint--error">{errorIcono}</span>}
       </div>
 
       <div className="adm-actions">
@@ -88,46 +130,56 @@ export function ItemsEditor({ items }: { items: AdminItem[] }) {
   const [adding, setAdding] = useState(false);
 
   return (
-    <div className="adm-items">
-      {items.map((item) => (
-        <article key={item.id} className="adm-item">
-          {editing === item.id ? (
-            <ItemForm item={item} onDone={() => setEditing(null)} />
-          ) : (
-            <div className="adm-item__row">
-              <span className="adm-item__icon">
+    <SortableList
+      items={items}
+      action={reorderItemsAction}
+      hint="Arrastra las filas por el asa para cambiar el orden en que salen en la web."
+      isStatic={(item) => editing === item.id}
+      footer={
+        adding ? (
+          <article className="adm-item">
+            <ItemForm item={null} onDone={() => setAdding(false)} />
+          </article>
+        ) : (
+          <button
+            type="button"
+            className="adm-btn adm-btn--primary adm-items__add"
+            onClick={() => setAdding(true)}
+          >
+            Añadir elemento
+          </button>
+        )
+      }
+    >
+      {(item, _index, controls) =>
+        editing === item.id ? (
+          <ItemForm item={item} onDone={() => setEditing(null)} />
+        ) : (
+          <>
+            <span className="adm-item__icon">
+              {item.iconPath ? (
+                // eslint-disable-next-line @next/next/no-img-element -- icono subido, sin optimizar
+                <img src={`${BACKEND_URL}${item.iconPath}`} alt="" />
+              ) : (
                 <InclusionIcon name={item.icon} />
-              </span>
-              <span className="adm-item__label">{item.defaultLabel}</span>
-              <code className="adm-item__slug">{item.slug}</code>
-              <div className="adm-item__tools">
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--ghost"
-                  onClick={() => setEditing(item.id)}
-                >
-                  Editar
-                </button>
-                <DeleteItemForm id={item.id} />
-              </div>
+              )}
+            </span>
+            <span className="adm-item__label">{item.defaultLabel}</span>
+            <code className="adm-item__slug">{item.slug}</code>
+            <div className="adm-item__tools">
+              <MoveButtons label={item.defaultLabel} controls={controls} />
+              <button
+                type="button"
+                className="adm-btn adm-btn--ghost"
+                onClick={() => setEditing(item.id)}
+              >
+                Editar
+              </button>
+              <DeleteItemForm id={item.id} />
             </div>
-          )}
-        </article>
-      ))}
-
-      {adding ? (
-        <article className="adm-item">
-          <ItemForm item={null} onDone={() => setAdding(false)} />
-        </article>
-      ) : (
-        <button
-          type="button"
-          className="adm-btn adm-btn--primary adm-items__add"
-          onClick={() => setAdding(true)}
-        >
-          Añadir elemento
-        </button>
-      )}
-    </div>
+          </>
+        )
+      }
+    </SortableList>
   );
 }

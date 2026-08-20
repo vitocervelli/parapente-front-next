@@ -9,6 +9,7 @@ import {
   updateProofAction,
 } from "../actions";
 import { BookingDetailsForm } from "./BookingDetailsForm";
+import { GalleryManager } from "./GalleryManager";
 import { ProofUploader } from "./ProofUploader";
 import type { Proof } from "@/lib/account-api";
 import type { AdminBooking } from "@/lib/admin-api";
@@ -243,6 +244,9 @@ export function BookingReview({ booking }: { booking: AdminBooking }) {
           <ProofUploader bookingId={booking.id} />
         </div>
       </section>
+
+      {/* ── Fotos y vídeos del vuelo, para el cliente ────────────────────── */}
+      <GalleryManager booking={booking} />
 
       {/* ── Vuelos, asistentes y notas (editable) ────────────────────────── */}
       <BookingDetailsForm booking={booking} />

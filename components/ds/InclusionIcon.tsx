@@ -1,11 +1,12 @@
 /**
- * Iconos de los elementos incluidos. El backend guarda solo la clave
- * ("horse", "cake"...), así el trazo se colorea con `currentColor` y no
- * depende de que el backend sirva imágenes.
+ * Iconos de los elementos incluidos. El backend guarda una clave
+ * ("horse", "cake"...) para el trazo por defecto, y opcionalmente una imagen
+ * propia (iconPath) que el panel sube y que tiene prioridad.
  *
  * Las claves vienen de InclusionItem.icon; si llega una desconocida se usa el
  * check genérico, de modo que dar de alta un elemento nuevo nunca rompe la web.
  */
+import { mediaUrl } from "@/lib/api";
 
 const paths: Record<string, React.ReactNode> = {
   paraglider: (
@@ -109,7 +110,36 @@ const paths: Record<string, React.ReactNode> = {
 /** Iconos disponibles, para el desplegable del catálogo en el panel. */
 export const ICON_KEYS = Object.keys(paths);
 
-export function InclusionIcon({ name, className }: { name: string; className?: string }) {
+/**
+ * Pinta el icono de un elemento incluido o un extra. Si hay `path` (una imagen
+ * que subió el panel) se muestra esa imagen; si no, se usa el trazo de la clave
+ * `name`, que colorea con currentColor y nunca depende del backend.
+ */
+export function InclusionIcon({
+  name,
+  path,
+  className,
+}: {
+  name: string;
+  path?: string | null;
+  className?: string;
+}) {
+  const src = mediaUrl(path);
+
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- icono subido por el panel, ya en /uploads
+      <img
+        src={src}
+        alt=""
+        width={22}
+        height={22}
+        className={className ? `inclusion-icon-img ${className}` : "inclusion-icon-img"}
+        aria-hidden="true"
+      />
+    );
+  }
+
   const shape = paths[name] ?? paths.check;
 
   return (

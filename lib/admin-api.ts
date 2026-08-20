@@ -11,6 +11,8 @@ export type AdminBooking = Booking & {
   adminNote: string | null;
   /** Retiene plazas pese a haber pasado su plazo de pago o su fecha de vuelo. */
   isOverdue: boolean;
+  /** Alta manual de una reserva anterior al sistema. */
+  isHistorical: boolean;
   customer: { id: number; email: string; fullName: string | null; phone: string | null } | null;
 };
 
@@ -38,6 +40,8 @@ export type AdminExtra = {
   price: { amount: string; currency: "USD" | "EUR"; display: string };
   currency: "USD" | "EUR";
   icon: string;
+  /** Icono subido por el panel; si es null se usa la clave `icon`. */
+  iconPath: string | null;
   note: string | null;
   position: number;
   isActive: boolean;
@@ -49,6 +53,7 @@ export type ExtraInput = {
   priceAmount: string;
   currency: "USD" | "EUR";
   icon: string;
+  iconPath: string | null;
   note: string | null;
   position: number;
   isActive: boolean;
@@ -102,7 +107,6 @@ export type ServiceInput = {
   durationMinutes: number | null;
   badge: string | null;
   image: string | null;
-  flyer: string | null;
   position: number;
   isActive: boolean;
   showOnHome: boolean;
@@ -221,6 +225,179 @@ export function deleteLocation(id: number) {
   return request<void>(`/api/admin/locations/${id}`, { method: "DELETE" });
 }
 
+// ── Aliados de la portada ─────────────────────────────────────────────────────
+
+/** Un aliado tal como lo edita el panel. */
+export type AdminAlly = {
+  id: number;
+  name: string;
+  kind: string | null;
+  logoPath: string | null;
+  position: number;
+  isActive: boolean;
+};
+
+export type AllyInput = {
+  name: string;
+  kind: string | null;
+  logoPath: string | null;
+  position: number;
+  isActive: boolean;
+};
+
+export async function listAllies(): Promise<AdminAlly[]> {
+  const res = await request<AdminAlly[]>("/api/admin/allies");
+  return res.ok ? res.data : [];
+}
+
+export function createAlly(input: AllyInput) {
+  return request<AdminAlly>("/api/admin/allies", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAlly(id: number, input: Partial<AllyInput>) {
+  return request<AdminAlly>(`/api/admin/allies/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteAlly(id: number) {
+  return request<void>(`/api/admin/allies/${id}`, { method: "DELETE" });
+}
+
+export function reorderAllies(ids: number[]) {
+  return request<{ updated: number }>("/api/admin/allies/reorder", {
+    method: "POST",
+    body: JSON.stringify({ order: ids }),
+  });
+}
+
+// ── Galería pública ───────────────────────────────────────────────────────────
+
+/** Una foto de la galería tal como la edita el panel. */
+export type AdminGalleryPhoto = {
+  id: number;
+  imagePath: string;
+  alt: string;
+  isFeatured: boolean;
+  isWide: boolean;
+  position: number;
+  isActive: boolean;
+};
+
+export type GalleryPhotoInput = {
+  imagePath: string;
+  alt: string;
+  isFeatured: boolean;
+  isWide: boolean;
+  position: number;
+  isActive: boolean;
+};
+
+export async function listGalleryPhotos(): Promise<AdminGalleryPhoto[]> {
+  const res = await request<AdminGalleryPhoto[]>("/api/admin/gallery");
+  return res.ok ? res.data : [];
+}
+
+export function createGalleryPhoto(input: GalleryPhotoInput) {
+  return request<AdminGalleryPhoto>("/api/admin/gallery", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateGalleryPhoto(id: number, input: Partial<GalleryPhotoInput>) {
+  return request<AdminGalleryPhoto>(`/api/admin/gallery/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteGalleryPhoto(id: number) {
+  return request<void>(`/api/admin/gallery/${id}`, { method: "DELETE" });
+}
+
+export function reorderGallery(ids: number[]) {
+  return request<{ updated: number }>("/api/admin/gallery/reorder", {
+    method: "POST",
+    body: JSON.stringify({ order: ids }),
+  });
+}
+
+// ── Reels de la portada ───────────────────────────────────────────────────────
+
+/** Un reel (vídeo vertical) tal como lo edita el panel. */
+export type AdminReel = {
+  id: number;
+  videoPath: string;
+  posterPath: string | null;
+  caption: string | null;
+  position: number;
+  isActive: boolean;
+};
+
+export type ReelInput = {
+  videoPath: string;
+  posterPath: string | null;
+  caption: string | null;
+  position: number;
+  isActive: boolean;
+};
+
+export async function listReels(): Promise<AdminReel[]> {
+  const res = await request<AdminReel[]>("/api/admin/reels");
+  return res.ok ? res.data : [];
+}
+
+export function createReel(input: ReelInput) {
+  return request<AdminReel>("/api/admin/reels", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateReel(id: number, input: Partial<ReelInput>) {
+  return request<AdminReel>(`/api/admin/reels/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteReel(id: number) {
+  return request<void>(`/api/admin/reels/${id}`, { method: "DELETE" });
+}
+
+export function reorderReels(ids: number[]) {
+  return request<{ updated: number }>("/api/admin/reels/reorder", {
+    method: "POST",
+    body: JSON.stringify({ order: ids }),
+  });
+}
+
+export function reorderExtras(ids: number[]) {
+  return request<{ updated: number }>("/api/admin/extras/reorder", {
+    method: "POST",
+    body: JSON.stringify({ order: ids }),
+  });
+}
+
+export function reorderItems(ids: number[]) {
+  return request<{ updated: number }>("/api/admin/inclusion-items/reorder", {
+    method: "POST",
+    body: JSON.stringify({ order: ids }),
+  });
+}
+
+export function reorderLocations(ids: number[]) {
+  return request<{ updated: number }>("/api/admin/locations/reorder", {
+    method: "POST",
+    body: JSON.stringify({ order: ids }),
+  });
+}
+
 // ── Disponibilidad (por localidad) ────────────────────────────────────────────
 
 export type SlotInput = {
@@ -299,6 +476,29 @@ export type CreateAdminBookingInput = {
 
 export function createAdminBooking(input: CreateAdminBookingInput) {
   return request<AdminBooking>("/api/admin/bookings", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Alta de una reserva HISTÓRICA (anterior al sistema). Sin franja ni cupo: nace
+ * completada/no-show y suma en los contadores. El servicio va como texto libre.
+ */
+export type CreateHistoricalBookingInput = {
+  customer: { email: string; fullName: string | null; phone: string | null };
+  serviceName: string;
+  flightDate: string;
+  peopleCount: number;
+  amount: string;
+  currency: "USD" | "EUR";
+  status: "completed" | "no_show";
+  note: string | null;
+  passengers: string[];
+};
+
+export function createHistoricalBooking(input: CreateHistoricalBookingInput) {
+  return request<AdminBooking>("/api/admin/bookings/historical", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -453,7 +653,7 @@ export function updateAdminSettings(input: Partial<SettingsInput>) {
 /** Sube una imagen y devuelve la ruta relativa que guarda el servicio. */
 export async function uploadImage(
   file: File,
-  folder: "services" | "flyers" | "icons",
+  folder: "services" | "icons" | "allies" | "gallery" | "reels",
 ): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
   const token = await getToken();
   if (!token) throw new UnauthorizedError();

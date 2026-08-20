@@ -4,6 +4,7 @@ import { Button } from "@/components/ds/Button";
 import { SectionHeading } from "@/components/ds/SectionHeading";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
+import { getGalleryPhotos, mediaUrl } from "@/lib/api";
 import { igAt, igUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -12,32 +13,17 @@ export const metadata: Metadata = {
     "Fotos de nuestros vuelos en Nirgua, La Guaira y Mérida. Cada vuelo deja una historia — la próxima puede ser la tuya.",
 };
 
-const featured = [
-  {
-    src: "/uploads/IMG_0021.JPG.jpeg",
-    alt: "Vuelo tándem sobre el valle",
-    tilt: "-1deg",
-    tapeTilt: "-4deg",
-  },
-  {
-    src: "/uploads/IMG_1192.JPG-7c08766d.jpeg",
-    alt: "Pura felicidad en el aire",
-    tilt: ".9deg",
-    tapeTilt: "3deg",
-  },
-];
+// Inclinaciones decorativas de las polaroids: se reparten por posición para
+// que la galería conserve su aire desordenado sin guardar nada en el panel.
+const FEATURED_TILTS = ["-1deg", ".9deg", "-.7deg", ".6deg"];
+const TAPE_TILTS = ["-4deg", "3deg", "-3deg", "4deg"];
+const STRIP_TILTS = ["-.6deg", ".5deg", "-.4deg", ".7deg", "-.7deg", ".4deg", "-.5deg"];
 
-const strip = [
-  { src: "/uploads/IMG_1332.JPG.jpeg", alt: "Volando sobre las montañas", tilt: "-.6deg" },
-  { src: "/uploads/IMG_5605.JPG-4b128596.jpeg", alt: "Preparando el despegue", tilt: ".5deg", wide: true },
-  { src: "/uploads/IMG_3266.JPG.jpeg", alt: "Ala multicolor sobre el valle", tilt: "-.4deg" },
-  { src: "/uploads/IMG_9789.JPG.jpeg", alt: "Sonrisas en el aire", tilt: ".7deg" },
-  { src: "/uploads/IMG_4752.JPG.jpeg", alt: "Despegue con ala azul", tilt: "-.7deg" },
-  { src: "/uploads/IMG_4353.JPG-a66a10fa.jpeg", alt: "Tándem sobre el bosque", tilt: ".4deg" },
-  { src: "/uploads/IMG_0019.JPG-3a06563c.jpeg", alt: "Sobre el embalse", tilt: "-.5deg" },
-];
+export default async function GaleriaPage() {
+  const fotos = await getGalleryPhotos();
+  const featured = fotos.filter((f) => f.isFeatured);
+  const strip = fotos.filter((f) => !f.isFeatured);
 
-export default function GaleriaPage() {
   return (
     <div className="gal-page">
       <SiteNav active="/galeria" />
@@ -58,48 +44,50 @@ export default function GaleriaPage() {
 
       <section className="gal-featured">
         <div className="gal-featured__grid">
-          {featured.map((f) => (
+          {featured.map((f, i) => (
             <figure
-              key={f.src}
+              key={f.id}
               className="polaroid"
-              style={{ "--tilt": f.tilt } as React.CSSProperties}
+              style={{ "--tilt": FEATURED_TILTS[i % FEATURED_TILTS.length] } as React.CSSProperties}
             >
               <span
                 className="polaroid__tape"
-                style={{ "--tape-tilt": f.tapeTilt } as React.CSSProperties}
+                style={{ "--tape-tilt": TAPE_TILTS[i % TAPE_TILTS.length] } as React.CSSProperties}
               />
-              <Image src={f.src} alt={f.alt} fill sizes="(max-width: 760px) 100vw, 50vw" />
+              <Image src={mediaUrl(f.imagePath)!} alt={f.alt} fill sizes="(max-width: 760px) 100vw, 50vw" />
             </figure>
           ))}
         </div>
       </section>
 
-      <section className="filmstrip">
-        <div className="filmstrip__head">
-          <span className="filmstrip__title">Más momentos</span>
-          <span className="filmstrip__hint">pasa el cursor para pausar</span>
-        </div>
-        <div className="pbv-strip">
-          <div className="pbv-track">
-            {/* Duplicated so the marquee loops seamlessly at -50% */}
-            {[...strip, ...strip].map((s, i) => (
-              <figure
-                key={`${s.src}-${i}`}
-                className={`strip-item${s.wide ? " strip-item--wide" : ""}`}
-                style={{ "--tilt": s.tilt } as React.CSSProperties}
-              >
-                <Image
-                  src={s.src}
-                  alt={i < strip.length ? s.alt : ""}
-                  width={800}
-                  height={1000}
-                  sizes="340px"
-                />
-              </figure>
-            ))}
+      {strip.length > 0 && (
+        <section className="filmstrip">
+          <div className="filmstrip__head">
+            <span className="filmstrip__title">Más momentos</span>
+            <span className="filmstrip__hint">pasa el cursor para pausar</span>
           </div>
-        </div>
-      </section>
+          <div className="pbv-strip">
+            <div className="pbv-track">
+              {/* Duplicated so the marquee loops seamlessly at -50% */}
+              {[...strip, ...strip].map((s, i) => (
+                <figure
+                  key={`${s.id}-${i}`}
+                  className={`strip-item${s.isWide ? " strip-item--wide" : ""}`}
+                  style={{ "--tilt": STRIP_TILTS[i % STRIP_TILTS.length] } as React.CSSProperties}
+                >
+                  <Image
+                    src={mediaUrl(s.imagePath)!}
+                    alt={i < strip.length ? s.alt : ""}
+                    width={800}
+                    height={1000}
+                    sizes="340px"
+                  />
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="gal-igcta">
         <div className="gal-igcta__inner">

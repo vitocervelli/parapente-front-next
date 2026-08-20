@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ds/Button";
 import type { Booking, Proof } from "@/lib/account-api";
+import { compressImage } from "@/lib/image";
 
 const TONO: Record<Proof["status"], string> = {
   pending: "res-estado--espera",
@@ -21,31 +22,11 @@ function formatBytes(bytes: number): string {
 }
 
 /**
- * Reduce una foto grande antes de subirla: una captura de móvil pesa varios MB
- * y para leer un comprobante sobran 2000 px de lado. Los PDF van tal cual.
+ * Reduce una foto grande antes de subirla (los PDF van tal cual). La lógica
+ * vive en lib/image.ts, compartida con la galería del panel.
  */
-async function compressIfImage(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.size < 1_000_000) return file;
-
-  try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.85),
-    );
-
-    if (!blob || blob.size >= file.size) return file;
-
-    return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
-  } catch {
-    // Formato que el navegador no sabe decodificar: se sube el original.
-    return file;
-  }
+function compressIfImage(file: File): Promise<File> {
+  return compressImage(file, { quality: 0.85 });
 }
 
 /** Lo que no se puede previsualizar en un <img>: icono de documento y etiqueta. */

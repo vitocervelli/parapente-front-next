@@ -139,8 +139,15 @@ export function BookingDetailsForm({ booking }: { booking: AdminBooking }) {
               {l.quantity > 1 ? ` ×${l.quantity}` : ""}
             </strong>
             <span>
-              {l.slot ? `${formatDayLong(l.slot.date)} · ${l.slot.label}` : "—"} · {l.seatsTotal}{" "}
-              {l.seatsTotal === 1 ? "plaza" : "plazas"} · {l.lineTotal.display}
+              {l.slot
+                ? `${formatDayLong(l.slot.date)} · ${l.slot.label}`
+                : l.flightDate
+                  ? formatDayLong(l.flightDate)
+                  : "—"}
+              {l.seatsTotal > 0
+                ? ` · ${l.seatsTotal} ${l.seatsTotal === 1 ? "plaza" : "plazas"}`
+                : ""}{" "}
+              · {l.lineTotal.display}
             </span>
           </header>
 

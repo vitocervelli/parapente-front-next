@@ -2,9 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { deleteExtraAction, saveExtraAction, type FormState } from "../actions";
-import { ICON_KEYS, InclusionIcon } from "@/components/ds/InclusionIcon";
+import { deleteExtraAction, reorderExtrasAction, saveExtraAction, uploadImageAction, type FormState } from "../actions";
+import { MoveButtons, SortableList } from "../SortableList";
+import { InclusionIcon } from "@/components/ds/InclusionIcon";
 import type { AdminExtra } from "@/lib/admin-api";
+import { BACKEND_URL } from "@/lib/api";
 
 function SaveButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -29,12 +31,30 @@ function slugify(value: string): string {
 function ExtraForm({ extra, onDone }: { extra: AdminExtra | null; onDone?: () => void }) {
   const action = saveExtraAction.bind(null, extra?.id ?? null);
   const [state, formAction] = useActionState<FormState, FormData>(action, null);
-  const [icon, setIcon] = useState(extra?.icon ?? "check");
+  const [iconPath, setIconPath] = useState(extra?.iconPath ?? "");
+  const [subiendoIcono, setSubiendoIcono] = useState(false);
+  const [errorIcono, setErrorIcono] = useState<string | null>(null);
   const [name, setName] = useState(extra?.name ?? "");
   const [slug, setSlug] = useState(extra?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(Boolean(extra));
 
   const errors = state?.errors ?? {};
+
+  async function subirIcono(file: File) {
+    setSubiendoIcono(true);
+    setErrorIcono(null);
+
+    const data = new FormData();
+    data.append("file", file);
+    const result = await uploadImageAction("icons", data);
+
+    if (result.ok) {
+      setIconPath(result.path);
+    } else {
+      setErrorIcono(result.error);
+    }
+    setSubiendoIcono(false);
+  }
 
   return (
     <form action={formAction} className="adm-item-form">
@@ -81,17 +101,6 @@ function ExtraForm({ extra, onDone }: { extra: AdminExtra | null; onDone?: () =>
         </label>
 
         <label className="adm-field">
-          <span>Icono</span>
-          <select name="icon" value={icon} onChange={(e) => setIcon(e.target.value)}>
-            {ICON_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="adm-field">
           <span>Orden</span>
           <input type="number" name="position" defaultValue={extra?.position ?? 0} />
         </label>
@@ -100,10 +109,37 @@ function ExtraForm({ extra, onDone }: { extra: AdminExtra | null; onDone?: () =>
           <input type="checkbox" name="isActive" defaultChecked={extra?.isActive ?? true} />
           <span>Activo</span>
         </label>
+      </div>
 
-        <span className="adm-item-form__preview">
-          <InclusionIcon name={icon} />
-        </span>
+      {/* El icono es una imagen subida; la clave antigua viaja oculta como reserva. */}
+      <input type="hidden" name="icon" value={extra?.icon ?? "check"} />
+      <div className="adm-field">
+        <span>Icono</span>
+        <input type="hidden" name="iconPath" value={iconPath} />
+        <div className="adm-upload">
+          <span className="adm-item-form__preview">
+            {iconPath ? (
+              // eslint-disable-next-line @next/next/no-img-element -- vista previa directa, sin optimizar
+              <img src={`${BACKEND_URL}${iconPath}`} alt="Icono del extra" />
+            ) : (
+              <InclusionIcon name={extra?.icon ?? "check"} />
+            )}
+          </span>
+          <div className="adm-upload__controls">
+            <input
+              type="file"
+              accept="image/png,image/webp,image/svg+xml,image/jpeg"
+              disabled={subiendoIcono}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void subirIcono(file);
+              }}
+            />
+            {subiendoIcono && <span className="adm-hint">Subiendo…</span>}
+          </div>
+        </div>
+        <span className="adm-hint">PNG, WebP o SVG cuadrado. Sube otro archivo para cambiarlo.</span>
+        {errorIcono && <span className="adm-hint adm-hint--error">{errorIcono}</span>}
       </div>
 
       {errors.priceAmount && <p className="adm-hint adm-hint--error">{errors.priceAmount}</p>}
@@ -144,50 +180,60 @@ export function ExtrasEditor({ extras }: { extras: AdminExtra[] }) {
   const [adding, setAdding] = useState(false);
 
   return (
-    <div className="adm-items">
-      {extras.map((extra) => (
-        <article key={extra.id} className="adm-item">
-          {editing === extra.id ? (
-            <ExtraForm extra={extra} onDone={() => setEditing(null)} />
-          ) : (
-            <div className="adm-item__row">
-              <span className="adm-item__icon">
+    <SortableList
+      items={extras}
+      action={reorderExtrasAction}
+      hint="Arrastra las filas por el asa para cambiar el orden en que salen al reservar."
+      isStatic={(extra) => editing === extra.id}
+      footer={
+        adding ? (
+          <article className="adm-item">
+            <ExtraForm extra={null} onDone={() => setAdding(false)} />
+          </article>
+        ) : (
+          <button
+            type="button"
+            className="adm-btn adm-btn--primary adm-items__add"
+            onClick={() => setAdding(true)}
+          >
+            Añadir extra
+          </button>
+        )
+      }
+    >
+      {(extra, _index, controls) =>
+        editing === extra.id ? (
+          <ExtraForm extra={extra} onDone={() => setEditing(null)} />
+        ) : (
+          <>
+            <span className="adm-item__icon">
+              {extra.iconPath ? (
+                // eslint-disable-next-line @next/next/no-img-element -- icono subido, sin optimizar
+                <img src={`${BACKEND_URL}${extra.iconPath}`} alt="" />
+              ) : (
                 <InclusionIcon name={extra.icon} />
-              </span>
-              <span className="adm-item__label">
-                {extra.name}
-                {!extra.isActive && <em className="adm-hint"> · inactivo</em>}
-              </span>
-              <span className="adm-item__price">{extra.price.display}</span>
-              <code className="adm-item__slug">{extra.slug}</code>
-              <div className="adm-item__tools">
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--ghost"
-                  onClick={() => setEditing(extra.id)}
-                >
-                  Editar
-                </button>
-                <DeleteExtraForm id={extra.id} />
-              </div>
+              )}
+            </span>
+            <span className="adm-item__label">
+              {extra.name}
+              {!extra.isActive && <em className="adm-hint"> · inactivo</em>}
+            </span>
+            <span className="adm-item__price">{extra.price.display}</span>
+            <code className="adm-item__slug">{extra.slug}</code>
+            <div className="adm-item__tools">
+              <MoveButtons label={extra.name} controls={controls} />
+              <button
+                type="button"
+                className="adm-btn adm-btn--ghost"
+                onClick={() => setEditing(extra.id)}
+              >
+                Editar
+              </button>
+              <DeleteExtraForm id={extra.id} />
             </div>
-          )}
-        </article>
-      ))}
-
-      {adding ? (
-        <article className="adm-item">
-          <ExtraForm extra={null} onDone={() => setAdding(false)} />
-        </article>
-      ) : (
-        <button
-          type="button"
-          className="adm-btn adm-btn--primary adm-items__add"
-          onClick={() => setAdding(true)}
-        >
-          Añadir extra
-        </button>
-      )}
-    </div>
+          </>
+        )
+      }
+    </SortableList>
   );
 }

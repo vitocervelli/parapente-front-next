@@ -6,6 +6,7 @@ import { getAvailability, type AvailabilityDay } from "@/lib/availability";
 import {
   acceptProof,
   createAdminBooking,
+  createHistoricalBooking,
   rejectProof,
   transitionBooking,
   UnauthorizedError,
@@ -13,6 +14,7 @@ import {
   updateProof,
   type BookingEdit,
   type CreateAdminBookingInput,
+  type CreateHistoricalBookingInput,
 } from "@/lib/admin-api";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -117,6 +119,23 @@ export async function crearReservaAdminAction(
     }
     revalidatePath("/admin/reservas");
     revalidatePath("/cuenta");
+    return { ok: true, reference: result.data.reference };
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+}
+
+/** Da de alta una reserva histórica (anterior al sistema). */
+export async function crearHistoricaAction(
+  input: CreateHistoricalBookingInput,
+): Promise<{ ok: true; reference: string } | { ok: false; error: string }> {
+  try {
+    const result = await createHistoricalBooking(input);
+    if (!result.ok) {
+      return { ok: false, error: Object.values(result.errors)[0] ?? "No se pudo crear la reserva histórica." };
+    }
+    revalidatePath("/admin/reservas");
     return { ok: true, reference: result.data.reference };
   } catch (error) {
     if (error instanceof UnauthorizedError) redirect("/admin/login");

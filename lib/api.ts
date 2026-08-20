@@ -15,6 +15,17 @@ export type Location = {
   isActive: boolean;
 };
 
+/** Un aliado de la sección «Vuelan con nosotros» de la portada. */
+export type Ally = {
+  id: number;
+  name: string;
+  kind: string | null;
+  /** Si es null se muestra el nombre con el estilo de rótulo. */
+  logoPath: string | null;
+  position: number;
+  isActive: boolean;
+};
+
 /** Referencia ligera a una zona, embebida en cada servicio. */
 export type ServiceLocation = { id: number; slug: string; name: string };
 
@@ -38,6 +49,8 @@ export type ServiceExtra = {
   name: string;
   price: { amount: string; currency: "USD" | "EUR"; display: string };
   icon: string;
+  /** Icono subido por el panel; si es null se usa la clave `icon`. */
+  iconPath: string | null;
   note: string | null;
   position: number;
 };
@@ -62,7 +75,6 @@ export type Service = {
   durationMinutes: number | null;
   badge: string | null;
   image: string | null;
-  flyer: string | null;
   position: number;
   isActive: boolean;
   /** Si ocupa sitio en el mosaico de la portada. */
@@ -188,6 +200,77 @@ export async function getLocations(): Promise<Location[]> {
     return body.data;
   } catch (error) {
     console.error("[api] No se pudieron leer las localidades:", error);
+    return [];
+  }
+}
+
+/** Una foto de la galería pública. */
+export type GalleryPhoto = {
+  id: number;
+  imagePath: string;
+  alt: string;
+  /** Polaroid grande arriba; el resto va en la tira. */
+  isFeatured: boolean;
+  /** En la tira ocupa el hueco ancho (fotos apaisadas). */
+  isWide: boolean;
+  position: number;
+  isActive: boolean;
+};
+
+/** Un reel (vídeo vertical) de la portada. */
+export type Reel = {
+  id: number;
+  videoPath: string;
+  posterPath: string | null;
+  caption: string | null;
+  position: number;
+  isActive: boolean;
+};
+
+export async function getReels(): Promise<Reel[]> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/reels`, {
+      next: { revalidate: REVALIDATE_SECONDS, tags: ["reels"] },
+    });
+
+    if (!res.ok) return [];
+
+    const body = (await res.json()) as { data: Reel[] };
+    return body.data;
+  } catch (error) {
+    console.error("[api] No se pudieron leer los reels:", error);
+    return [];
+  }
+}
+
+export async function getGalleryPhotos(): Promise<GalleryPhoto[]> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/gallery`, {
+      next: { revalidate: REVALIDATE_SECONDS, tags: ["gallery"] },
+    });
+
+    if (!res.ok) return [];
+
+    const body = (await res.json()) as { data: GalleryPhoto[] };
+    return body.data;
+  } catch (error) {
+    console.error("[api] No se pudieron leer las fotos de la galería:", error);
+    return [];
+  }
+}
+
+export async function getAllies(): Promise<Ally[]> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/allies`, {
+      next: { revalidate: REVALIDATE_SECONDS, tags: ["allies"] },
+    });
+
+    if (!res.ok) return [];
+
+    const body = (await res.json()) as { data: Ally[] };
+    return body.data;
+  } catch (error) {
+    console.error("[api] No se pudieron leer los aliados:", error);
     return [];
   }
 }

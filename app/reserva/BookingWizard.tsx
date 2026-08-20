@@ -532,7 +532,7 @@ export function BookingWizard({
                 <ul>
                   {servicio.inclusions.map((i) => (
                     <li key={i.id}>
-                      <InclusionIcon name={i.icon} />
+                      <InclusionIcon name={i.icon} path={i.iconPath} />
                       {i.label}
                     </li>
                   ))}

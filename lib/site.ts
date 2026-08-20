@@ -4,7 +4,7 @@ export const site = {
   whatsapp: "+58 414 8003636",
   instagram: "parapentebellavista",
   heroVideoUrl: "https://cdn.pixabay.com/video/2020/01/12/31179-384523315_large.mp4",
-  reels: ["/uploads/IMG_4910.MP4", "/uploads/IMG_4910.MP4", "/uploads/IMG_4910.MP4"],
+  // Los reels de la portada se gestionan desde el panel (tabla `reel`), no aquí.
 };
 
 export const waDigits = site.whatsapp.replace(/\D/g, "");

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { listBookings, listOverdueBookings, type AdminBooking } from "@/lib/admin-api";
+import { BookingsTable } from "./BookingsTable";
+import { listBookings, listOverdueBookings } from "@/lib/admin-api";
 import { requireAdmin } from "@/lib/auth";
-import { formatDayLong } from "@/lib/availability";
 
 /**
  * Filtros de la bandeja. Los primeros son los que piden acción del equipo; el
@@ -17,6 +17,7 @@ const FILTROS: {
   leyenda: string;
   estados: string[];
   overdue?: boolean;
+  historical?: boolean;
 }[] = [
   {
     clave: "revisar",
@@ -70,6 +71,13 @@ const FILTROS: {
     estados: ["cancelled_by_admin", "cancelled_by_customer"],
   },
   {
+    clave: "historicas",
+    etiqueta: "Históricas",
+    leyenda: "Reservas anteriores al sistema, registradas a mano. Cuentan en los totales.",
+    estados: [],
+    historical: true,
+  },
+  {
     clave: "todas",
     etiqueta: "Todas",
     leyenda: "Todas las reservas, sin filtrar por estado.",
@@ -77,24 +85,17 @@ const FILTROS: {
   },
 ];
 
-const TONO: Record<string, string> = {
-  pending_payment: "res-estado--aviso",
-  proof_submitted: "res-estado--espera",
-  confirmed: "res-estado--ok",
-  completed: "res-estado--ok",
-  rejected: "res-estado--no",
-  cancelled_by_admin: "res-estado--no",
-  cancelled_by_customer: "res-estado--no",
-  expired: "res-estado--no",
-};
-
 export default async function AdminReservasPage({ searchParams }: PageProps<"/admin/reservas">) {
   await requireAdmin();
 
   const { filtro } = await searchParams;
   const todas = FILTROS[FILTROS.length - 1];
   const activo = FILTROS.find((f) => f.clave === filtro) ?? todas;
-  const reservas = activo.overdue ? await listOverdueBookings() : await listBookings(activo.estados);
+  const reservas = activo.overdue
+    ? await listOverdueBookings()
+    : activo.historical
+      ? (await listBookings([])).filter((r) => r.isHistorical)
+      : await listBookings(activo.estados);
 
   const porRevisar = activo.clave === "revisar"
     ? reservas.length
@@ -103,10 +104,6 @@ export default async function AdminReservasPage({ searchParams }: PageProps<"/ad
   // Cuántas vencidas hay, para el aviso de arriba (y para no repetir consulta
   // cuando el filtro activo ya es el de vencidas).
   const vencidas = activo.overdue ? reservas.length : (await listOverdueBookings()).length;
-
-  // Lo vencido lo decide el backend (isOverdue); en el filtro «Vencidas» todas
-  // lo son por definición.
-  const esVencida = (r: AdminBooking) => activo.overdue || r.isOverdue;
 
   return (
     <>
@@ -119,9 +116,14 @@ export default async function AdminReservasPage({ searchParams }: PageProps<"/ad
               : `${porRevisar} ${porRevisar === 1 ? "comprobante espera" : "comprobantes esperan"} tu revisión.`}
           </p>
         </div>
-        <Link href="/admin/reservas/nueva" className="adm-btn adm-btn--primary">
-          + Nueva reserva
-        </Link>
+        <div className="adm-actions">
+          <Link href="/admin/reservas/historica" className="adm-btn adm-btn--ghost">
+            + Reserva histórica
+          </Link>
+          <Link href="/admin/reservas/nueva" className="adm-btn adm-btn--primary">
+            + Nueva reserva
+          </Link>
+        </div>
       </div>
 
       {vencidas > 0 && !activo.overdue && (
@@ -148,49 +150,7 @@ export default async function AdminReservasPage({ searchParams }: PageProps<"/ad
         <strong>{activo.etiqueta}:</strong> {activo.leyenda}
       </p>
 
-      {reservas.length === 0 ? (
-        <p className="adm-empty">No hay reservas en este filtro.</p>
-      ) : (
-        <div className="adm-table">
-          {reservas.map((r) => (
-            <article key={r.id} className="adm-row adm-row--booking">
-              <div className="adm-row__main">
-                <span className="adm-row__titulo">
-                  <Link href={`/admin/reservas/${r.id}`} className="adm-row__name">
-                    {r.reference}
-                  </Link>
-                  <span className="adm-row__personas">
-                    {r.people} {r.people === 1 ? "persona" : "personas"}
-                  </span>
-                </span>
-                <span className="adm-row__meta">
-                  {r.customer?.fullName ?? r.customer?.email ?? "—"} ·{" "}
-                  {r.lines
-                    .map((l) =>
-                      l.slot ? `${l.serviceName} (${formatDayLong(l.slot.date)} ${l.slot.label})` : l.serviceName,
-                    )
-                    .join(" + ")}
-                </span>
-              </div>
-
-              <span className="adm-row__estados">
-                <span className={`res-estado ${TONO[r.status] ?? ""}`}>{r.statusLabel}</span>
-                {esVencida(r) && <span className="res-estado res-estado--no">Vencida</span>}
-              </span>
-              <span className="adm-row__price">{r.total.display}</span>
-
-              <div className="adm-row__actions">
-                <Link
-                  href={`/admin/reservas/${r.id}`}
-                  className={`adm-btn ${esVencida(r) ? "adm-btn--danger" : "adm-btn--ghost"}`}
-                >
-                  {esVencida(r) ? "Revisar y rechazar" : "Revisar"}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+      <BookingsTable reservas={reservas} vistaVencidas={Boolean(activo.overdue)} />
     </>
   );
 }

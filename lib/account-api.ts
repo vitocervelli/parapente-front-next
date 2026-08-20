@@ -26,7 +26,19 @@ export type BookingLine = {
     endTime: string;
     label: string;
   } | null;
+  /** Fecha del vuelo cuando no hay franja (reservas históricas). */
+  flightDate: string | null;
   attendees: BookingAttendee[];
+};
+
+/** Una foto o vídeo del vuelo, subido por el equipo a la reserva. */
+export type BookingMediaItem = {
+  id: number;
+  kind: "image" | "video";
+  mimeType: string;
+  originalName: string;
+  sizeBytes: number;
+  uploadedAt: string;
 };
 
 export type Proof = {
@@ -63,6 +75,8 @@ export type Booking = {
   createdAt: string;
   lines: BookingLine[];
   proofs: Proof[];
+  /** Galería del vuelo: fotos y vídeos que sube el equipo. */
+  media: BookingMediaItem[];
 };
 
 /** Reservas del cliente autenticado. Lista vacía si algo falla. */

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export function Reel({ src, poster }: { src: string; poster: string }) {
+export function Reel({ src, poster }: { src: string; poster?: string | null }) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -28,7 +28,16 @@ export function Reel({ src, poster }: { src: string; poster: string }) {
 
   return (
     <div className="reel">
-      <video ref={ref} src={src} autoPlay muted loop playsInline preload="metadata" poster={poster} />
+      <video
+        ref={ref}
+        src={src}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        poster={poster ?? undefined}
+      />
     </div>
   );
 }

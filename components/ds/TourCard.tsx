@@ -4,7 +4,7 @@ import { Button } from "./Button";
 import { InclusionIcon } from "./InclusionIcon";
 import { Tag } from "./Tag";
 
-type InclusionRow = { id: number; label: string; icon: string };
+type InclusionRow = { id: number; label: string; icon: string; iconPath?: string | null };
 
 type Props = {
   image: string;
@@ -57,7 +57,7 @@ export function TourCard({
             <ul className="pbv-tour__includes-list">
               {inclusions.map((i) => (
                 <li key={i.id}>
-                  <InclusionIcon name={i.icon} />
+                  <InclusionIcon name={i.icon} path={i.iconPath} />
                   <span>{i.label}</span>
                 </li>
               ))}

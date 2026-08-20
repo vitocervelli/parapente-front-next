@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { deleteLocationAction, saveLocationAction, type FormState } from "../actions";
+import { deleteLocationAction, reorderLocationsAction, saveLocationAction, type FormState } from "../actions";
+import { MoveButtons, SortableList } from "../SortableList";
 import type { AdminLocation } from "@/lib/admin-api";
 
 function SaveButton({ label }: { label: string }) {
@@ -127,47 +128,52 @@ export function LocationsEditor({ locations }: { locations: AdminLocation[] }) {
   const [adding, setAdding] = useState(false);
 
   return (
-    <div className="adm-items">
-      {locations.map((loc) => (
-        <article key={loc.id} className="adm-item">
-          {editing === loc.id ? (
-            <LocationForm location={loc} onDone={() => setEditing(null)} />
-          ) : (
-            <div className="adm-item__row">
-              <span className="adm-item__label">
-                {loc.name}
-                {loc.badge && <em className="adm-hint"> · {loc.badge}</em>}
-                {!loc.isActive && <em className="adm-hint"> · inactiva</em>}
-              </span>
-              <code className="adm-item__slug">{loc.slug}</code>
-              <div className="adm-item__tools">
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--ghost"
-                  onClick={() => setEditing(loc.id)}
-                >
-                  Editar
-                </button>
-                <DeleteLocationForm id={loc.id} />
-              </div>
+    <SortableList
+      items={locations}
+      action={reorderLocationsAction}
+      hint="Arrastra las filas por el asa para cambiar el orden en que salen en la web."
+      isStatic={(loc) => editing === loc.id}
+      footer={
+        adding ? (
+          <article className="adm-item">
+            <LocationForm location={null} onDone={() => setAdding(false)} />
+          </article>
+        ) : (
+          <button
+            type="button"
+            className="adm-btn adm-btn--primary adm-items__add"
+            onClick={() => setAdding(true)}
+          >
+            Añadir localidad
+          </button>
+        )
+      }
+    >
+      {(loc, _index, controls) =>
+        editing === loc.id ? (
+          <LocationForm location={loc} onDone={() => setEditing(null)} />
+        ) : (
+          <>
+            <span className="adm-item__label">
+              {loc.name}
+              {loc.badge && <em className="adm-hint"> · {loc.badge}</em>}
+              {!loc.isActive && <em className="adm-hint"> · inactiva</em>}
+            </span>
+            <code className="adm-item__slug">{loc.slug}</code>
+            <div className="adm-item__tools">
+              <MoveButtons label={loc.name} controls={controls} />
+              <button
+                type="button"
+                className="adm-btn adm-btn--ghost"
+                onClick={() => setEditing(loc.id)}
+              >
+                Editar
+              </button>
+              <DeleteLocationForm id={loc.id} />
             </div>
-          )}
-        </article>
-      ))}
-
-      {adding ? (
-        <article className="adm-item">
-          <LocationForm location={null} onDone={() => setAdding(false)} />
-        </article>
-      ) : (
-        <button
-          type="button"
-          className="adm-btn adm-btn--primary adm-items__add"
-          onClick={() => setAdding(true)}
-        >
-          Añadir localidad
-        </button>
-      )}
-    </div>
+          </>
+        )
+      }
+    </SortableList>
   );
 }

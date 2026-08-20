@@ -3,18 +3,33 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  createAlly,
   createExtra,
+  createGalleryPhoto,
   createItem,
   createLocation,
+  createReel,
   createService,
+  deleteAlly,
   deleteExtra,
+  deleteGalleryPhoto,
   deleteItem,
   deleteLocation,
+  deleteReel,
   deleteService,
+  reorderAllies,
+  reorderExtras,
+  reorderGallery,
+  reorderItems,
+  reorderLocations,
+  reorderReels,
   reorderServices,
   UnauthorizedError,
   updateAdminSettings,
+  updateAlly,
   updateExtra,
+  updateGalleryPhoto,
+  updateReel,
   updateItem,
   updateLocation,
   updateService,
@@ -32,7 +47,7 @@ function revalidatePublicPages(): void {
   revalidatePath("/");
   revalidatePath("/servicios");
   revalidatePath("/contacto");
-  revalidatePath("/admin");
+  revalidatePath("/admin/servicios");
 }
 
 function toNullable(value: FormDataEntryValue | null): string | null {
@@ -89,7 +104,6 @@ function readServiceInput(formData: FormData): ServiceInput {
     durationMinutes: duration === null ? null : Number(duration),
     badge: toNullable(formData.get("badge")),
     image: toNullable(formData.get("image")),
-    flyer: toNullable(formData.get("flyer")),
     position: Number(formData.get("position") ?? 0),
     isActive: formData.get("isActive") === "on",
     showOnHome: formData.get("showOnHome") === "on",
@@ -145,7 +159,7 @@ export async function saveServiceAction(
   }
 
   revalidatePublicPages();
-  redirect("/admin");
+  redirect("/admin/servicios");
 }
 
 /** Guarda el orden que ha dejado el arrastre en el listado. */
@@ -200,7 +214,7 @@ export async function deleteServiceAction(formData: FormData): Promise<void> {
   }
 
   revalidatePublicPages();
-  redirect("/admin");
+  redirect("/admin/servicios");
 }
 
 export async function saveItemAction(
@@ -260,6 +274,7 @@ export async function saveExtraAction(
     priceAmount: String(formData.get("priceAmount") ?? "").trim(),
     currency: (formData.get("currency") === "USD" ? "USD" : "EUR") as "USD" | "EUR",
     icon: String(formData.get("icon") ?? "check").trim() || "check",
+    iconPath: toNullable(formData.get("iconPath")),
     note: toNullable(formData.get("note")),
     position: Number(formData.get("position") ?? 0),
     isActive: formData.get("isActive") === "on",
@@ -346,6 +361,223 @@ export async function deleteLocationAction(_prev: FormState, formData: FormData)
   return { message: "Localidad borrada." };
 }
 
+export async function saveAllyAction(
+  id: number | null,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const input = {
+    name: String(formData.get("name") ?? "").trim(),
+    kind: toNullable(formData.get("kind")),
+    logoPath: toNullable(formData.get("logoPath")),
+    position: Number(formData.get("position") ?? 0),
+    isActive: formData.get("isActive") === "on",
+  };
+
+  try {
+    const result = id === null ? await createAlly(input) : await updateAlly(id, input);
+
+    if (!result.ok) {
+      return { errors: result.errors, message: result.errors._ ?? "Revisa los campos marcados." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePublicPages();
+  redirect("/admin/aliados");
+}
+
+/** Fábrica de las actions de reordenado: todas comparten forma y errores. */
+async function runReorder(
+  ids: number[],
+  send: (ids: number[]) => Promise<{ ok: true; data: { updated: number } } | { ok: false; errors: FieldErrors }>,
+  extraPath?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (ids.length === 0) {
+    return { ok: false, error: "No hay nada que ordenar." };
+  }
+
+  try {
+    const result = await send(ids);
+    if (!result.ok) {
+      return { ok: false, error: result.errors._ ?? result.errors.order ?? "No se pudo guardar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePublicPages();
+  if (extraPath) revalidatePath(extraPath);
+  return { ok: true };
+}
+
+export async function reorderExtrasAction(ids: number[]) {
+  return runReorder(ids, reorderExtras, "/admin/extras");
+}
+
+export async function reorderGalleryAction(ids: number[]) {
+  const result = await runReorder(ids, reorderGallery, "/admin/galeria");
+  revalidatePath("/galeria");
+  return result;
+}
+
+export async function reorderReelsAction(ids: number[]) {
+  const result = await runReorder(ids, reorderReels, "/admin/reels");
+  revalidatePath("/");
+  return result;
+}
+
+export async function saveReelAction(
+  id: number | null,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const input = {
+    videoPath: String(formData.get("videoPath") ?? "").trim(),
+    posterPath: toNullable(formData.get("posterPath")),
+    caption: toNullable(formData.get("caption")),
+    position: Number(formData.get("position") ?? 0),
+    isActive: formData.get("isActive") === "on",
+  };
+
+  if (!input.videoPath) {
+    return { errors: { videoPath: "Sube un vídeo para el reel." }, message: "Falta el vídeo." };
+  }
+
+  try {
+    const result = id === null ? await createReel(input) : await updateReel(id, input);
+
+    if (!result.ok) {
+      return { errors: result.errors, message: result.errors._ ?? "Revisa los campos marcados." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/");
+  redirect("/admin/reels");
+}
+
+export async function deleteReelAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const id = Number(formData.get("id"));
+
+  try {
+    const result = await deleteReel(id);
+    if (!result.ok) {
+      return { message: result.errors._ ?? "No se pudo borrar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/reels");
+  return { message: "Reel borrado." };
+}
+
+export async function saveGalleryPhotoAction(
+  id: number | null,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const input = {
+    imagePath: String(formData.get("imagePath") ?? "").trim(),
+    alt: String(formData.get("alt") ?? "").trim(),
+    isFeatured: formData.get("isFeatured") === "on",
+    isWide: formData.get("isWide") === "on",
+    position: Number(formData.get("position") ?? 0),
+    isActive: formData.get("isActive") === "on",
+  };
+
+  try {
+    const result =
+      id === null ? await createGalleryPhoto(input) : await updateGalleryPhoto(id, input);
+
+    if (!result.ok) {
+      return { errors: result.errors, message: result.errors._ ?? "Revisa los campos marcados." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/galeria");
+  redirect("/admin/galeria");
+}
+
+export async function deleteGalleryPhotoAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const id = Number(formData.get("id"));
+
+  try {
+    const result = await deleteGalleryPhoto(id);
+    if (!result.ok) {
+      return { message: result.errors._ ?? "No se pudo borrar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/galeria");
+  revalidatePath("/admin/galeria");
+  return { message: "Foto borrada." };
+}
+
+export async function reorderItemsAction(ids: number[]) {
+  return runReorder(ids, reorderItems, "/admin/inclusiones");
+}
+
+export async function reorderLocationsAction(ids: number[]) {
+  return runReorder(ids, reorderLocations, "/admin/localidades");
+}
+
+export async function reorderAlliesAction(
+  ids: number[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (ids.length === 0) {
+    return { ok: false, error: "No hay nada que ordenar." };
+  }
+
+  try {
+    const result = await reorderAllies(ids);
+    if (!result.ok) {
+      return { ok: false, error: result.errors._ ?? result.errors.order ?? "No se pudo guardar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePublicPages();
+  revalidatePath("/admin/aliados");
+  return { ok: true };
+}
+
+export async function deleteAllyAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const id = Number(formData.get("id"));
+
+  try {
+    const result = await deleteAlly(id);
+    if (!result.ok) {
+      return { message: result.errors._ ?? "No se pudo borrar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePublicPages();
+  return { message: "Aliado borrado." };
+}
+
 export async function saveSettingsAction(
   _prev: FormState,
   formData: FormData,
@@ -375,7 +607,7 @@ export async function saveSettingsAction(
 
 /** Sube una imagen y devuelve su ruta para que el formulario la guarde. */
 export async function uploadImageAction(
-  folder: "services" | "flyers" | "icons",
+  folder: "services" | "icons" | "allies" | "gallery" | "reels",
   formData: FormData,
 ): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
   const file = formData.get("file");

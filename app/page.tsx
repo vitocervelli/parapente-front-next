@@ -7,7 +7,15 @@ import { SectionHeading } from "@/components/ds/SectionHeading";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
 import { WhatsappFloat } from "@/components/site/WhatsappFloat";
-import { getLocations, getServices, getStats, mediaUrl, type Service } from "@/lib/api";
+import {
+  getAllies,
+  getLocations,
+  getReels,
+  getServices,
+  getStats,
+  mediaUrl,
+  type Service,
+} from "@/lib/api";
 import { igAt, igUrl, site } from "@/lib/site";
 
 const tickerText =
@@ -64,12 +72,6 @@ const steps = [
   },
 ] as const;
 
-const reelPosters = [
-  "/assets/imagery/flight-valley.jpg",
-  "/assets/imagery/flight-clouds.jpg",
-  "/assets/imagery/flight-forest.jpg",
-];
-
 const igPosts = [
   "/uploads/IMG_4429.JPG.jpeg",
   "/uploads/IMG_4430.JPG.jpeg",
@@ -80,10 +82,12 @@ const igPosts = [
 const trust = ["Pilotos certificados", "Equipo homologado", "Seguro incluido", "+500 vuelos seguros"];
 
 export default async function Home() {
-  const [services, cifras, locations] = await Promise.all([
+  const [services, cifras, locations, aliados, reels] = await Promise.all([
     getServices({ onlyHome: true }),
     getStats(),
     getLocations(),
+    getAllies(),
+    getReels(),
   ]);
 
   // El número real de personas que han volado (paquetes de X personas cuentan
@@ -202,24 +206,27 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="reels">
-        <div className="reels__inner">
-          <div className="section-row">
-            <SectionHeading tone="dark" kicker="Reels" title="Vívelo en" script="movimiento" />
-            <a className="link-underline" href={igUrl} target="_blank" rel="noopener noreferrer">
-              Más reels en Instagram →
-            </a>
+      {reels.length > 0 && (
+        <section className="reels">
+          <div className="reels__inner">
+            <div className="section-row">
+              <SectionHeading tone="dark" kicker="Reels" title="Vívelo en" script="movimiento" />
+              <a className="link-underline" href={igUrl} target="_blank" rel="noopener noreferrer">
+                Más reels en Instagram →
+              </a>
+            </div>
+            <div className="reels__grid">
+              {reels.map((reel) => (
+                <Reel
+                  key={reel.id}
+                  src={mediaUrl(reel.videoPath)!}
+                  poster={mediaUrl(reel.posterPath)}
+                />
+              ))}
+            </div>
           </div>
-          <div className="reels__grid">
-            {site.reels.map((src, i) => (
-              <Reel key={i} src={src} poster={reelPosters[i]} />
-            ))}
-          </div>
-          <p className="reels__note">
-            Videos de muestra — reemplázalos en <code>lib/site.ts</code>.
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="breaker">
         <Image
@@ -301,24 +308,20 @@ export default async function Home() {
         <div className="allies__inner">
           <SectionHeading tone="light" kicker="Aliados" title="Vuelan con" script="nosotros" />
           <div className="allies__grid">
-            <div className="ally">
-              <span className="ally__name">La Panamericana</span>
-              <span className="ally__type">Panadería</span>
-            </div>
-            <div className="ally ally--brand">
-              <Image
-                src="/assets/aliado-masonjard.jpg"
-                alt="Tú MasonJard — Tienda de regalos"
-                width={140}
-                height={140}
-                className="ally__logo"
-              />
-              <span className="ally__type">Tienda de regalos</span>
-            </div>
-            <div className="ally ally--empty">
-              <span className="ally__title">Tu marca aquí</span>
-              <span className="ally__hint">Espacio disponible para aliados</span>
-            </div>
+            {aliados.map((a) => {
+              const logo = mediaUrl(a.logoPath);
+              return (
+                <div key={a.id} className={`ally${logo ? " ally--brand" : ""}`}>
+                  {logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- logo subido por el panel, dominio propio
+                    <img src={logo} alt={a.kind ? `${a.name} — ${a.kind}` : a.name} className="ally__logo" width={140} height={140} />
+                  ) : (
+                    <span className="ally__name">{a.name}</span>
+                  )}
+                  {a.kind && <span className="ally__type">{a.kind}</span>}
+                </div>
+              );
+            })}
           </div>
           <div className="allies__row">
             <p>

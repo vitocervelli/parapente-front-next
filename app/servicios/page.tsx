@@ -63,7 +63,12 @@ function toCard(service: Service) {
     tags: tagsFor(service),
     price: service.price.display,
     priceNote: service.priceNote,
-    inclusions: service.inclusions.map((i) => ({ id: i.id, label: i.label, icon: i.icon })),
+    inclusions: service.inclusions.map((i) => ({
+      id: i.id,
+      label: i.label,
+      icon: i.icon,
+      iconPath: i.iconPath,
+    })),
   };
 }
 
@@ -97,26 +102,42 @@ export default async function ServiciosPage() {
         </div>
       </header>
 
-      {zonas.map(({ loc, services: zonaServices }, i) => (
-        <section
-          key={loc.slug}
-          className={`svc-section ${i % 2 === 0 ? "svc-section--air" : "svc-section--land"}`}
-        >
-          <SectionHeading
-            tone="light"
-            kicker={loc.badge ?? loc.region ?? "Zona de vuelo"}
-            title={loc.name}
-            script={loc.region && !loc.badge ? "" : (loc.region ?? "")}
-          />
-          {loc.description && <p className="svc-zone-desc">{loc.description}</p>}
-          <div className="svc-grid">
-            {zonaServices.map((s) => {
-              const { key, ...card } = toCard(s);
-              return <TourCard key={key} {...card} />;
-            })}
-          </div>
-        </section>
-      ))}
+      {zonas.map(({ loc, services: zonaServices }, i) => {
+        // Dentro de cada ciudad separamos los vuelos de siempre de las
+        // promociones para celebrar. Los subtítulos solo salen cuando hay de
+        // los dos tipos; si una zona tiene solo uno, se muestra sin encabezar.
+        const grupos = [
+          { label: "Vuelos", items: zonaServices.filter((s) => s.type === "standalone") },
+          { label: "Promociones", items: zonaServices.filter((s) => s.type === "promotion") },
+        ].filter((g) => g.items.length > 0);
+        const conTitulos = grupos.length > 1;
+
+        return (
+          <section
+            key={loc.slug}
+            className={`svc-section ${i % 2 === 0 ? "svc-section--air" : "svc-section--land"}`}
+          >
+            <SectionHeading
+              tone="light"
+              kicker={loc.badge ?? loc.region ?? "Zona de vuelo"}
+              title={loc.name}
+            />
+            {loc.description && <p className="svc-zone-desc">{loc.description}</p>}
+
+            {grupos.map((grupo) => (
+              <div key={grupo.label} className="svc-group">
+                {conTitulos && <h3 className="svc-subhead">{grupo.label}</h3>}
+                <div className="svc-grid">
+                  {grupo.items.map((s) => {
+                    const { key, ...card } = toCard(s);
+                    return <TourCard key={key} {...card} />;
+                  })}
+                </div>
+              </div>
+            ))}
+          </section>
+        );
+      })}
 
       {services.length === 0 && (
         <section className="svc-section svc-section--air">

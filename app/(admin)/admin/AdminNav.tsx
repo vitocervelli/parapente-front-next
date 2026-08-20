@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
  * responsive salen gratis.
  *
  * `match` lista los prefijos de ruta que "pertenecen" al enlace — así
- * /admin/servicios/12 sigue iluminando «Servicios» aunque su href sea /admin.
+ * /admin/servicios/12 sigue iluminando «Servicios».
  */
 const GRUPOS: {
   titulo: string;
@@ -18,10 +18,13 @@ const GRUPOS: {
   {
     titulo: "Catálogo",
     items: [
-      { href: "/admin", label: "Servicios", match: ["/admin", "/admin/servicios"] },
+      { href: "/admin/servicios", label: "Servicios", match: ["/admin/servicios"] },
       { href: "/admin/localidades", label: "Localidades", match: ["/admin/localidades"] },
       { href: "/admin/extras", label: "Extras de pago", match: ["/admin/extras"] },
       { href: "/admin/inclusiones", label: "Elementos incluidos", match: ["/admin/inclusiones"] },
+      { href: "/admin/aliados", label: "Aliados", match: ["/admin/aliados"] },
+      { href: "/admin/galeria", label: "Galería", match: ["/admin/galeria"] },
+      { href: "/admin/reels", label: "Reels", match: ["/admin/reels"] },
     ],
   },
   {
