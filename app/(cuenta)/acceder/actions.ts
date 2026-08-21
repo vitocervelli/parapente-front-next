@@ -1,9 +1,15 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { clearToken, login, register } from "@/lib/auth";
+import {
+  clearToken,
+  login,
+  register,
+  requestPasswordReset,
+  resetPassword,
+} from "@/lib/auth";
 
-export type AccessState = { errors?: Record<string, string>; message?: string } | null;
+export type AccessState = { errors?: Record<string, string>; message?: string; ok?: boolean } | null;
 
 /**
  * A dónde ir después de entrar. Solo se admiten rutas internas: aceptar una
@@ -62,6 +68,50 @@ export async function registerCustomerAction(
   }
 
   redirect(safeDestination(formData.get("volver"), "/cuenta"));
+}
+
+export async function requestResetAction(
+  _prev: AccessState,
+  formData: FormData,
+): Promise<AccessState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { message: "Escribe tu correo." };
+  }
+
+  const result = await requestPasswordReset(email);
+  if (!result.ok) {
+    return { message: result.error };
+  }
+
+  // Neutro a propósito: no se confirma si el correo tiene o no cuenta.
+  return {
+    ok: true,
+    message: "Si ese correo tiene una cuenta, te enviamos un enlace para recuperarla. Revisa tu bandeja (y el spam).",
+  };
+}
+
+export async function resetPasswordAction(
+  _prev: AccessState,
+  formData: FormData,
+): Promise<AccessState> {
+  const token = String(formData.get("token") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const repeat = String(formData.get("passwordRepeat") ?? "");
+
+  if (!token) {
+    return { message: "El enlace no es válido o ha caducado. Pide uno nuevo." };
+  }
+  if (password !== repeat) {
+    return { errors: { passwordRepeat: "Las dos contraseñas no coinciden." } };
+  }
+
+  const result = await resetPassword(token, password);
+  if (!result.ok) {
+    return { message: result.error };
+  }
+
+  redirect("/acceder?restablecida=1");
 }
 
 export async function logoutCustomerAction(): Promise<void> {

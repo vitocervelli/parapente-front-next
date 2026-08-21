@@ -683,3 +683,32 @@ export async function uploadImage(
 
   return { ok: true, path: (body as { data: { path: string } }).data.path };
 }
+
+/** Un usuario registrado, tal como lo ve el panel. */
+export type AdminUser = {
+  id: number;
+  email: string;
+  fullName: string | null;
+  idNumber: string | null;
+  phone: string | null;
+  isAdmin: boolean;
+  createdAt: string;
+  bookingsCount: number;
+};
+
+/** Todos los usuarios registrados, los más recientes primero. */
+export async function listUsers(): Promise<AdminUser[]> {
+  const res = await request<AdminUser[]>("/api/admin/users");
+  return res.ok ? res.data : [];
+}
+
+/** Detalle de un cliente: sus datos y todas sus reservas (incluidas históricas). */
+export type AdminUserDetail = {
+  user: AdminUser;
+  bookings: AdminBooking[];
+};
+
+export async function getUser(id: number): Promise<AdminUserDetail | null> {
+  const res = await request<AdminUserDetail>(`/api/admin/users/${id}`);
+  return res.ok ? res.data : null;
+}

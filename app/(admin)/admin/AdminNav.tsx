@@ -32,6 +32,7 @@ const GRUPOS: {
     items: [
       { href: "/admin/reservas", label: "Reservas", match: ["/admin/reservas"] },
       { href: "/admin/disponibilidad", label: "Disponibilidad", match: ["/admin/disponibilidad"] },
+      { href: "/admin/usuarios", label: "Clientes", match: ["/admin/usuarios"] },
     ],
   },
   {

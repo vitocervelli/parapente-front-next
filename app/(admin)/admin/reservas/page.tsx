@@ -48,7 +48,7 @@ const FILTROS: {
   {
     clave: "completadas",
     etiqueta: "Completadas",
-    leyenda: "El vuelo ya se realizó.",
+    leyenda: "El vuelo ya se realizó y ya has subido la fotos",
     estados: ["completed"],
   },
   {

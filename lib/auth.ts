@@ -166,3 +166,105 @@ export async function register(input: {
   await setToken((body as { data: { token: string } }).data.token);
   return { ok: true };
 }
+
+/** Pide un enlace de recuperación. La respuesta es siempre neutra (no revela si el correo existe). */
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let res: Response;
+
+  try {
+    res = await fetch(`${BACKEND_URL}/api/password/forgot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, error: "No se pudo contactar con el servidor." };
+  }
+
+  if (res.status === 429) {
+    return { ok: false, error: "Demasiados intentos. Prueba en unos minutos." };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: `El servidor respondió ${res.status}.` };
+  }
+
+  return { ok: true };
+}
+
+/** Fija una contraseña nueva con el token que llegó por correo. */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let res: Response;
+
+  try {
+    res = await fetch(`${BACKEND_URL}/api/password/reset`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password: newPassword }),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, error: "No se pudo contactar con el servidor." };
+  }
+
+  const body = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    if (body && typeof body === "object" && "errors" in body) {
+      const errs = body.errors as Record<string, string>;
+      return { ok: false, error: errs.password ?? "Revisa la contraseña e inténtalo de nuevo." };
+    }
+    const message =
+      body && typeof body === "object" && "error" in body
+        ? (body.error as { message?: string }).message
+        : undefined;
+    return { ok: false, error: message ?? `El servidor respondió ${res.status}.` };
+  }
+
+  return { ok: true };
+}
+
+/** Cambia la contraseña del cliente autenticado (pide la actual). */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ ok: true } | { ok: false; errors: Record<string, string> }> {
+  const token = await getToken();
+  if (!token) {
+    return { ok: false, errors: { _: "Tu sesión ha caducado. Vuelve a entrar." } };
+  }
+
+  let res: Response;
+
+  try {
+    res = await fetch(`${BACKEND_URL}/api/account/password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ currentPassword, newPassword }),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false, errors: { _: "No se pudo contactar con el servidor." } };
+  }
+
+  if (res.status === 401 || res.status === 403) {
+    return { ok: false, errors: { _: "Tu sesión ha caducado. Vuelve a entrar." } };
+  }
+
+  const body = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    if (body && typeof body === "object" && "errors" in body) {
+      return { ok: false, errors: body.errors as Record<string, string> };
+    }
+    return { ok: false, errors: { _: `El servidor respondió ${res.status}.` } };
+  }
+
+  return { ok: true };
+}

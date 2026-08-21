@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { loginCustomerAction, registerCustomerAction, type AccessState } from "./actions";
@@ -30,6 +31,9 @@ function LoginPane({ destino }: { destino: string }) {
         autoComplete="current-password"
         required
       />
+      <Link href="/recuperar" className="acceso__link">
+        ¿Olvidaste tu contraseña?
+      </Link>
       {state?.message && <p className="acceso__error">{state.message}</p>}
       <Submit label="Entrar" pendingLabel="Entrando…" />
     </form>
