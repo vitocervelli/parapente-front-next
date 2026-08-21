@@ -1,18 +1,25 @@
+import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 
 /**
- * Tarjeta que se ve al compartir la web por WhatsApp, Instagram, Facebook, X,
- * Telegram, etc. La generan las convenciones `opengraph-image` y `twitter-image`
- * de Next; ambas la reutilizan desde aquí para no duplicar el diseño.
+ * Tarjeta que se ve al compartir la web por WhatsApp, Facebook, X, Telegram,
+ * LinkedIn, iMessage, etc. La generan las convenciones `opengraph-image` y
+ * `twitter-image` de Next; ambas la reutilizan desde aquí para no duplicarla.
  *
- * 1200×630 es la proporción que piden las redes para la tarjeta grande.
+ * Es una foto real de vuelo (IMG_4752) a 1200×630 —la proporción que piden las
+ * redes para la tarjeta grande— con un degradado inferior y el nombre de marca.
+ * La foto se empaqueta con el propio código (import.meta.url) para no depender
+ * de que el backend esté disponible al generar la imagen.
  */
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt =
-  "Parapente Bella Vista — Vuelos tándem en parapente en Nirgua, Yaracuy";
+  "Parapente Bella Vista — vuelo tándem en parapente sobre el valle";
 
-export function renderSocialImage() {
+export async function renderSocialImage() {
+  const bytes = await readFile(new URL("./og-share.jpg", import.meta.url));
+  const src = `data:image/jpeg;base64,${bytes.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -20,71 +27,63 @@ export function renderSocialImage() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
           position: "relative",
-          padding: 76,
-          color: "#ffffff",
           fontFamily: "sans-serif",
-          background:
-            "linear-gradient(135deg, #022f6d 0%, #004aad 55%, #1a63c9 100%)",
         }}
       >
-        {/* Parapente decorativo, a la derecha y separado del texto */}
-        <svg
-          width="470"
-          height="320"
-          viewBox="0 0 140 96"
-          fill="none"
-          style={{ position: "absolute", top: 150, right: 70 }}
-        >
-          <path
-            d="M8 44 Q70 6 132 44 Q70 26 8 44 Z"
-            fill="rgba(255,255,255,0.20)"
-          />
-          <path
-            d="M14 42 L64 82"
-            stroke="rgba(255,255,255,0.9)"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M126 42 L76 82"
-            stroke="rgba(255,255,255,0.9)"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          />
-          <circle cx="70" cy="86" r="6.5" fill="#fcd532" />
-        </svg>
+        {/* Foto a sangre */}
+        <img
+          src={src}
+          width={size.width}
+          height={size.height}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "50% 60%",
+          }}
+        />
 
-        {/* Bloque de texto */}
-        <div style={{ display: "flex", flexDirection: "column", maxWidth: 600 }}>
+        {/* Degradado inferior para que el texto se lea */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(2,17,45,0) 42%, rgba(2,17,45,0.78) 100%)",
+          }}
+        />
+
+        {/* Marca y frase */}
+        <div
+          style={{
+            position: "absolute",
+            left: 64,
+            right: 64,
+            bottom: 56,
+            display: "flex",
+            flexDirection: "column",
+            color: "#ffffff",
+          }}
+        >
           <div
             style={{
-              width: 132,
-              height: 12,
+              width: 118,
+              height: 11,
               borderRadius: 6,
               background: "#fcd532",
-              marginBottom: 30,
+              marginBottom: 22,
             }}
           />
           <div
             style={{
-              fontSize: 30,
-              fontWeight: 700,
-              letterSpacing: 6,
-              color: "#fcd532",
-              marginBottom: 14,
-            }}
-          >
-            NIRGUA · LA GUAIRA · MÉRIDA
-          </div>
-          <div
-            style={{
-              fontSize: 84,
+              fontSize: 76,
               fontWeight: 800,
-              lineHeight: 1.02,
-              marginBottom: 20,
+              lineHeight: 1.0,
+              letterSpacing: -1,
+              textShadow: "0 2px 12px rgba(0,0,0,0.35)",
             }}
           >
             Parapente Bella Vista
@@ -92,14 +91,14 @@ export function renderSocialImage() {
           <div
             style={{
               display: "flex",
-              fontSize: 34,
-              lineHeight: 1.3,
-              maxWidth: 780,
-              color: "rgba(255,255,255,0.92)",
+              marginTop: 16,
+              fontSize: 32,
+              color: "rgba(255,255,255,0.94)",
+              textShadow: "0 2px 10px rgba(0,0,0,0.4)",
             }}
           >
-            Vuelos tándem en parapente. Pilotos certificados, equipo homologado
-            y seguro incluido. Atrévete a tocar las nubes.
+            Vuelos tándem en Nirgua, La Guaira y Mérida · Atrévete a tocar las
+            nubes.
           </div>
         </div>
       </div>
