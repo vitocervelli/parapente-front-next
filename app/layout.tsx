@@ -35,10 +35,33 @@ const regularBrush = localFont({
   variable: "--font-regular-brush",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://parapente-front-next.vercel.app";
+const TITULO = "Parapente Bella Vista — Vuela en Nirgua, La Guaira y Mérida";
+const DESCRIPCION =
+  "Vuelos tándem en parapente, paseos a caballo y 4x4 en Nirgua, Yaracuy. Pilotos certificados, equipo homologado y seguro incluido. Atrévete a tocar las nubes con tus manos.";
+
 export const metadata: Metadata = {
-  title: "Parapente Bella Vista — Vuela en Nirgua, La Guaira y Mérida",
-  description:
-    "Vuelos tándem en parapente, paseos a caballo y 4x4 en Nirgua, Yaracuy. Pilotos certificados, equipo homologado y seguro incluido. Atrévete a tocar las nubes con tus manos.",
+  // Base para resolver a URL absoluta la imagen social (opengraph-image /
+  // twitter-image) y las rutas canónicas: WhatsApp, Instagram y compañía
+  // exigen URLs absolutas para mostrar la vista previa.
+  metadataBase: new URL(SITE_URL),
+  title: TITULO,
+  description: DESCRIPCION,
+  // La imagen la aportan automáticamente app/opengraph-image.tsx y
+  // app/twitter-image.tsx; aquí solo el texto y el contexto del enlace.
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    url: "/",
+    siteName: "Parapente Bella Vista",
+    title: TITULO,
+    description: DESCRIPCION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITULO,
+    description: DESCRIPCION,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

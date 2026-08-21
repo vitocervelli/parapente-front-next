@@ -72,7 +72,7 @@ export function UsersTable({ usuarios }: { usuarios: AdminUser[] }) {
       ) : (
         <div className="adm-table">
           {visibles.map((u) => (
-            <article key={u.id} className="adm-row">
+            <article key={u.id} className="adm-row adm-row--user">
               <div className="adm-row__main">
                 <span className="adm-row__titulo">
                   <Link href={`/admin/usuarios/${u.id}`} className="adm-row__name">

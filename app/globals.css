@@ -1304,7 +1304,7 @@ a:hover {
 /* Referencia + nº de personas de la reserva. */
 .adm-row__titulo { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .adm-row__personas { font-size: 16px; font-weight: 600; color: var(--primary); background: #e8f0fb; border-radius: 999px; padding: 1px 9px; white-space: nowrap; }
-.adm-row--booking { grid-template-columns: 1fr auto auto auto; }
+.adm-row--booking, .adm-row--user { grid-template-columns: 1fr auto auto auto; }
 .rev { display: flex; flex-direction: column; gap: 20px; }
 .rev__proofs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .rev__proof { display: flex; align-items: flex-start; gap: 14px; }
@@ -1334,8 +1334,9 @@ a:hover {
 .rev__proofs + .rev__subir { border-top: 1px solid var(--gray-200); padding-top: 16px; }
 
 @media (max-width: 720px) {
-  .adm-row--booking { grid-template-columns: 1fr; }
-  .adm-row--booking .adm-row__price, .adm-row--booking .res-estado, .adm-row--booking .adm-row__actions { justify-self: start; }
+  .adm-row--booking, .adm-row--user { grid-template-columns: 1fr; }
+  .adm-row--booking .adm-row__price, .adm-row--booking .res-estado, .adm-row--booking .adm-row__actions,
+  .adm-row--user .adm-row__price, .adm-row--user .res-estado, .adm-row--user .adm-row__actions { justify-self: start; }
 }
 
 /* Comprobantes: saldo, archivos elegidos y revisión del admin */
