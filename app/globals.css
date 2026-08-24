@@ -231,12 +231,12 @@ a:hover {
 .nav--page .nav__brand span { font-size: 19px; letter-spacing: 0.06em; }
 .nav__links { display: flex; align-items: center; gap: 32px; }
 .nav--page .nav__links { gap: 26px; }
-.nav__link { font-family: var(--font-display); letter-spacing: 0.18em; font-size: 16px; color: var(--white); text-decoration: none; text-transform: uppercase; transition: color var(--dur-fast); }
-.nav--page .nav__link { letter-spacing: var(--track-caps); font-size: 16px; }
+.nav__link { font-family: var(--font-body); font-weight: 600; letter-spacing: 0.12em; font-size: 16px; color: var(--white); text-decoration: none; text-transform: uppercase; transition: color var(--dur-fast); }
+.nav--page .nav__link { letter-spacing: 0.12em; font-size: 16px; }
 .nav__link:hover { color: var(--yellow-500); }
 .nav__link--active { color: var(--yellow-500); }
 .nav__link--active:hover { color: var(--yellow-500); }
-.nav__cta { font-family: var(--font-display); letter-spacing: 0.18em; font-size: 16px; color: var(--ink); background: var(--yellow-500); text-decoration: none; text-transform: uppercase; padding: 12px 22px; transition: transform 150ms var(--ease-out); }
+.nav__cta { font-family: var(--font-body); font-weight: 700; letter-spacing: 0.1em; font-size: 16px; color: var(--ink); background: var(--yellow-500); text-decoration: none; text-transform: uppercase; padding: 12px 22px; transition: transform 150ms var(--ease-out); }
 .nav__cta:hover { transform: translateY(-2px); color: var(--ink); }
 
 /* Yellow / blue / outline display-font CTA links */

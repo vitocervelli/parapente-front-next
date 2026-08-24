@@ -336,7 +336,7 @@ export default async function Home() {
       </section>
 
       <section className="cta-final">
-        <Image src="/assets/imagery/flight-clouds.jpg" alt="" fill sizes="100vw" />
+        <Image src="/assets/imagery/flight-sea.jpg" alt="" fill sizes="100vw" />
         <div className="cta-final__scrim" />
         <div className="cta-final__content">
           <div className="cta-final__title">VUELA HOY</div>
