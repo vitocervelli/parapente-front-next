@@ -712,6 +712,22 @@ a:hover {
 .adm-btn--danger:hover { border-color: var(--danger); background: #fdf2f2; color: var(--danger); }
 .adm-btn:disabled { opacity: 0.55; cursor: default; }
 
+/* Zona peligrosa (p. ej. eliminar cliente): separada y con marco rojo suave. */
+.adm-danger { margin-top: 36px; padding: 20px 22px; border: 1px solid #f0c9c9; border-radius: var(--adm-radius); background: #fdf5f5; }
+.adm-danger__head { margin-bottom: 14px; }
+.adm-danger__title { margin: 0 0 4px; font-size: 18px; font-weight: 700; color: var(--danger); }
+.adm-danger__desc { margin: 0; font-size: 16px; line-height: 1.5; color: var(--gray-700); max-width: 60ch; }
+
+/* Aviso de confirmación de acciones destructivas. */
+.adm-modal__backdrop { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(8, 18, 34, 0.55); }
+.adm-modal { width: 100%; max-width: 460px; background: var(--white); border-radius: var(--adm-radius); box-shadow: 0 24px 60px rgba(8, 18, 34, 0.28); padding: 24px; }
+.adm-modal__title { margin: 0 0 12px; font-size: 20px; font-weight: 700; color: var(--ink); }
+.adm-modal__text { margin: 0 0 10px; font-size: 16px; line-height: 1.5; color: var(--gray-700); }
+.adm-modal__list { margin: 0 0 16px; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.45; color: var(--gray-700); }
+.adm-modal__check { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; font-size: 16px; line-height: 1.4; color: var(--ink); cursor: pointer; }
+.adm-modal__check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--danger); flex: none; }
+.adm-modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+
 .adm-alert { margin: 0 0 4px; padding: 11px 14px; border-radius: var(--adm-radius-sm); font-size: 16px; border: 1px solid transparent; }
 .adm-alert--error { background: #fdecec; border-color: #f5c9c9; color: #8c2020; }
 .adm-alert--ok { background: #e7f6ed; border-color: #bfe6cd; color: #14652f; }

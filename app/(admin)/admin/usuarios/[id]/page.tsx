@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DeleteUserButton } from "./DeleteUserButton";
 import { BookingsTable } from "../../reservas/BookingsTable";
 import { getUser } from "@/lib/admin-api";
 import { requireAdmin } from "@/lib/auth";
@@ -55,6 +56,14 @@ export default async function AdminUsuarioDetallePage({ params }: PageProps<"/ad
       </dl>
 
       {bookings.length > 0 && <BookingsTable reservas={bookings} vistaVencidas={false} />}
+
+      {!user.isAdmin && (
+        <DeleteUserButton
+          userId={user.id}
+          userName={user.fullName ?? user.email}
+          bookingsCount={user.bookingsCount}
+        />
+      )}
     </>
   );
 }

@@ -712,3 +712,14 @@ export async function getUser(id: number): Promise<AdminUserDetail | null> {
   const res = await request<AdminUserDetail>(`/api/admin/users/${id}`);
   return res.ok ? res.data : null;
 }
+
+/**
+ * Elimina un cliente y TODO lo asociado (reservas, comprobantes, fotos y datos).
+ * El backend rechaza (422) borrar cuentas del equipo o la propia sesión.
+ */
+export function deleteUser(id: number) {
+  return request<{ ok: boolean; bookingsDeleted: number; filesDeleted: number }>(
+    `/api/admin/users/${id}`,
+    { method: "DELETE" },
+  );
+}

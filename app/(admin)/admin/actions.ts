@@ -17,6 +17,7 @@ import {
   deleteLocation,
   deleteReel,
   deleteService,
+  deleteUser,
   reorderAllies,
   reorderExtras,
   reorderGallery,
@@ -215,6 +216,29 @@ export async function deleteServiceAction(formData: FormData): Promise<void> {
 
   revalidatePublicPages();
   redirect("/admin/servicios");
+}
+
+/**
+ * Elimina un cliente y todos sus datos. Si el backend lo rechaza (cuenta del
+ * equipo o sesión propia), devuelve el mensaje; si va bien, vuelve al listado.
+ */
+export async function deleteUserAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const id = Number(formData.get("id"));
+
+  try {
+    const result = await deleteUser(id);
+    if (!result.ok) {
+      return { message: result.errors._ ?? "No se pudo eliminar el cliente." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  // El cliente y sus reservas desaparecen de ambos listados.
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/reservas");
+  redirect("/admin/usuarios");
 }
 
 export async function saveItemAction(
