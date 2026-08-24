@@ -1382,7 +1382,11 @@ a:hover {
 /* Galería del vuelo: cuadrícula de fotos/vídeos por reserva (admin y cuenta) */
 .mediag__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 4px 0 12px; }
 .mediag__item { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--gray-100); border: 1px solid var(--gray-200); display: block; }
-.mediag__item a { display: block; width: 100%; height: 100%; }
+/* Solo el enlace que envuelve la foto/vídeo llena el recuadro. Se excluye el
+   botón de descarga (.mediag__descarga), que también es un <a>: si no, se
+   estiraba a todo el recuadro y, con su border-radius:50%, se veía como un
+   círculo oscuro encima de la imagen. */
+.mediag__item a:not(.mediag__descarga) { display: block; width: 100%; height: 100%; }
 .mediag__item img, .mediag__item video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .mediag__play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--white); background: rgba(8, 18, 34, 0.35); pointer-events: none; }
 .mediag__borrar { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: none; border-radius: 50%; background: rgba(8, 18, 34, 0.65); color: var(--white); font-size: 14px; line-height: 1; cursor: pointer; transition: background 120ms; }
