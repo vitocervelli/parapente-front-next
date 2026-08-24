@@ -713,6 +713,21 @@ export async function getUser(id: number): Promise<AdminUserDetail | null> {
   return res.ok ? res.data : null;
 }
 
+/** Alta de una cuenta del equipo (administrador) con correo y contraseña. */
+export type NewAdminInput = {
+  email: string;
+  password: string;
+  fullName: string | null;
+  phone: string | null;
+};
+
+export function createAdminUser(input: NewAdminInput) {
+  return request<AdminUser>("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 /**
  * Elimina un cliente y TODO lo asociado (reservas, comprobantes, fotos y datos).
  * El backend rechaza (422) borrar cuentas del equipo o la propia sesión.

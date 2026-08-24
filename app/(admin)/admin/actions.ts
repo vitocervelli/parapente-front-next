@@ -8,6 +8,7 @@ import {
   createGalleryPhoto,
   createItem,
   createLocation,
+  createAdminUser,
   createReel,
   createService,
   deleteAlly,
@@ -216,6 +217,32 @@ export async function deleteServiceAction(formData: FormData): Promise<void> {
 
   revalidatePublicPages();
   redirect("/admin/servicios");
+}
+
+/**
+ * Crea una cuenta del equipo (administrador) con correo y contraseña. Devuelve
+ * los errores de campo si el backend los rechaza; si va bien, refresca el listado.
+ */
+export async function createAdminUserAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const input = {
+    email: String(formData.get("email") ?? "").trim(),
+    password: String(formData.get("password") ?? ""),
+    fullName: (String(formData.get("fullName") ?? "").trim() || null) as string | null,
+    phone: (String(formData.get("phone") ?? "").trim() || null) as string | null,
+  };
+
+  try {
+    const result = await createAdminUser(input);
+    if (!result.ok) {
+      return { errors: result.errors };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/admin/usuarios");
+  redirect("/admin/usuarios");
 }
 
 /**

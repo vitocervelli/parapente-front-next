@@ -1,3 +1,4 @@
+import { NewAdminForm } from "./NewAdminForm";
 import { UsersTable } from "./UsersTable";
 import { listUsers } from "@/lib/admin-api";
 import { requireAdmin } from "@/lib/auth";
@@ -18,6 +19,9 @@ export default async function AdminUsuariosPage() {
               ? "Aún no hay usuarios registrados."
               : `${clientes} ${clientes === 1 ? "cliente registrado" : "clientes registrados"}.`}
           </p>
+        </div>
+        <div className="adm-actions">
+          <NewAdminForm />
         </div>
       </div>
 
