@@ -14,6 +14,21 @@ export const metadata: Metadata = {
     "Escríbenos tus dudas sobre volar en parapente en Nirgua, La Guaira o Mérida. Sábados, domingos y feriados de 8:00 AM a 5:00 PM.",
 };
 
+/**
+ * «Cuatro cielos», «Un cielo»… El título de las zonas de vuelo se calcula a
+ * partir de cuántas localidades activas tenga el panel, con el número en
+ * palabras y el singular/plural correcto.
+ */
+const NUMEROS = [
+  "Cero", "Un", "Dos", "Tres", "Cuatro", "Cinco", "Seis",
+  "Siete", "Ocho", "Nueve", "Diez", "Once", "Doce",
+];
+
+function tituloCielos(n: number): string {
+  const palabra = NUMEROS[n] ?? String(n);
+  return `${palabra} ${n === 1 ? "cielo" : "cielos"}`;
+}
+
 export default async function ContactoPage() {
   const [services, locations] = await Promise.all([getServices(), getLocations()]);
   const experiencias = services.map((s) => s.name);
@@ -106,7 +121,7 @@ export default async function ContactoPage() {
 
       {locations.length > 0 && (
         <section className="locations">
-          <SectionHeading tone="light" kicker="Zonas de vuelo" title="Tres cielos" script="para ti" />
+          <SectionHeading tone="light" kicker="Zonas de vuelo" title={tituloCielos(locations.length)} script="para ti" />
           <div className="locations__grid">
             {locations.map((l) => (
               <div key={l.slug} className="loc-card">
