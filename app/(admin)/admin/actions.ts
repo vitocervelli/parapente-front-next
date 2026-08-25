@@ -35,7 +35,6 @@ import {
   updateItem,
   updateLocation,
   updateService,
-  uploadImage,
   type FieldErrors,
   type InclusionInput,
   type ServiceInput,
@@ -654,23 +653,4 @@ export async function saveSettingsAction(
   revalidatePath("/reserva");
   revalidatePath("/admin/ajustes");
   return { message: "Ajustes guardados." };
-}
-
-/** Sube una imagen y devuelve su ruta para que el formulario la guarde. */
-export async function uploadImageAction(
-  folder: "services" | "icons" | "allies" | "gallery" | "reels",
-  formData: FormData,
-): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  const file = formData.get("file");
-
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Elige un archivo." };
-  }
-
-  try {
-    return await uploadImage(file, folder);
-  } catch (error) {
-    if (error instanceof UnauthorizedError) redirect("/admin/login");
-    throw error;
-  }
 }

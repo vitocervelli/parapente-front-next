@@ -650,40 +650,6 @@ export function updateAdminSettings(input: Partial<SettingsInput>) {
   });
 }
 
-/** Sube una imagen y devuelve la ruta relativa que guarda el servicio. */
-export async function uploadImage(
-  file: File,
-  folder: "services" | "icons" | "allies" | "gallery" | "reels",
-): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  const token = await getToken();
-  if (!token) throw new UnauthorizedError();
-
-  const form = new FormData();
-  form.append("file", file);
-  form.append("folder", folder);
-
-  const res = await fetch(`${BACKEND_URL}/api/admin/uploads`, {
-    method: "POST",
-    body: form,
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-
-  if (res.status === 401 || res.status === 403) throw new UnauthorizedError();
-
-  const body = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const message =
-      body && typeof body === "object" && "error" in body
-        ? (body.error as { message?: string }).message
-        : undefined;
-    return { ok: false, error: message ?? `Error ${res.status}` };
-  }
-
-  return { ok: true, path: (body as { data: { path: string } }).data.path };
-}
-
 /** Un usuario registrado, tal como lo ve el panel. */
 export type AdminUser = {
   id: number;
