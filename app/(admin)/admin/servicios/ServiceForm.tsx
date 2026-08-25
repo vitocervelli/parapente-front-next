@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { uploadImageAction, type FormState } from "../actions";
+import { type FormState } from "../actions";
+import { uploadImageDirect } from "@/lib/upload-client";
 import { InclusionIcon } from "@/components/ds/InclusionIcon";
 import type { AdminExtra, AdminItem, AdminLocation } from "@/lib/admin-api";
 import { BACKEND_URL, type Service } from "@/lib/api";
@@ -60,7 +61,7 @@ function ImageField({
 
     const data = new FormData();
     data.append("file", file);
-    const result = await uploadImageAction(folder, data);
+    const result = await uploadImageDirect(folder, data);
 
     if (result.ok) {
       setPath(result.path);

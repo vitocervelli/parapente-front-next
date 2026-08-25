@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { AdminBooking } from "@/lib/admin-api";
 import { compressImage } from "@/lib/image";
+import { uploadDirect, uploadError } from "@/lib/upload-client";
 
 const TIPOS_IMAGEN = ["image/jpeg", "image/png", "image/webp"];
 const TIPOS_VIDEO = ["video/mp4", "video/quicktime", "video/webm"];
@@ -118,23 +119,9 @@ export function GalleryManager({ booking }: { booking: AdminBooking }) {
     const formData = new FormData();
     for (const file of files) formData.append("files[]", file);
 
-    try {
-      const res = await fetch(`/admin/reservas/${booking.id}/media`, {
-        method: "POST",
-        body: formData,
-      });
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
-        const message =
-          body && typeof body === "object" && "error" in body
-            ? (body.error as { message?: string }).message
-            : undefined;
-        return message ?? `El servidor respondió ${res.status}.`;
-      }
-      return null;
-    } catch {
-      return "No se pudo contactar con el servidor.";
-    }
+    // Directo al backend (sin pasar por Vercel), para admitir vídeos de hasta 100 MB.
+    const res = await uploadDirect(`/api/admin/bookings/${booking.id}/media`, formData);
+    return res.ok ? null : uploadError(res.body, res.status);
   }
 
   async function subir() {

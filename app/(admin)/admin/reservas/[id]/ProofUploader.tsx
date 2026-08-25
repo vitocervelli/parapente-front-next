@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { uploadDirect, uploadError } from "@/lib/upload-client";
 
 const MAX_ARCHIVOS = 6;
 const TIPOS = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -95,19 +96,10 @@ export function ProofUploader({ bookingId }: { bookingId: number }) {
         formData.append("files[]", file);
       }
 
-      const res = await fetch(`/admin/reservas/${bookingId}/comprobante`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const body = await res.json().catch(() => null);
+      const res = await uploadDirect(`/api/admin/bookings/${bookingId}/proofs`, formData);
 
       if (!res.ok) {
-        const message =
-          body && typeof body === "object" && "error" in body
-            ? (body.error as { message?: string }).message
-            : undefined;
-        setError(message ?? `El servidor respondió ${res.status}.`);
+        setError(uploadError(res.body, res.status));
         return;
       }
 

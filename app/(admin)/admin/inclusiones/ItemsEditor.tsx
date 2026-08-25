@@ -6,12 +6,12 @@ import {
   deleteItemAction,
   reorderItemsAction,
   saveItemAction,
-  uploadImageAction,
   type FormState,
 } from "../actions";
 import { MoveButtons, SortableList } from "../SortableList";
 import { InclusionIcon } from "@/components/ds/InclusionIcon";
 import type { AdminItem } from "@/lib/admin-api";
+import { uploadImageDirect } from "@/lib/upload-client";
 import { BACKEND_URL } from "@/lib/api";
 
 function SaveButton({ label }: { label: string }) {
@@ -37,7 +37,7 @@ function ItemForm({ item, onDone }: { item: AdminItem | null; onDone?: () => voi
 
     const data = new FormData();
     data.append("file", file);
-    const result = await uploadImageAction("icons", data);
+    const result = await uploadImageDirect("icons", data);
 
     if (result.ok) {
       setIconPath(result.path);

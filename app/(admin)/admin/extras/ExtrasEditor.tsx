@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { deleteExtraAction, reorderExtrasAction, saveExtraAction, uploadImageAction, type FormState } from "../actions";
+import { deleteExtraAction, reorderExtrasAction, saveExtraAction, type FormState } from "../actions";
+import { uploadImageDirect } from "@/lib/upload-client";
 import { MoveButtons, SortableList } from "../SortableList";
 import { InclusionIcon } from "@/components/ds/InclusionIcon";
 import type { AdminExtra } from "@/lib/admin-api";
@@ -46,7 +47,7 @@ function ExtraForm({ extra, onDone }: { extra: AdminExtra | null; onDone?: () =>
 
     const data = new FormData();
     data.append("file", file);
-    const result = await uploadImageAction("icons", data);
+    const result = await uploadImageDirect("icons", data);
 
     if (result.ok) {
       setIconPath(result.path);

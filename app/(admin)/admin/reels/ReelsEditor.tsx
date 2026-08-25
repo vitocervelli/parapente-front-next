@@ -6,12 +6,12 @@ import {
   deleteReelAction,
   reorderReelsAction,
   saveReelAction,
-  uploadImageAction,
   type FormState,
 } from "../actions";
 import { MoveButtons, SortableList } from "../SortableList";
 import type { AdminReel } from "@/lib/admin-api";
 import { BACKEND_URL } from "@/lib/api";
+import { uploadDirect, uploadError, uploadImageDirect } from "@/lib/upload-client";
 
 function SaveButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -43,20 +43,14 @@ function ReelForm({ reel, onDone }: { reel: AdminReel | null; onDone?: () => voi
 
     const data = new FormData();
     data.append("file", file);
-    try {
-      const res = await fetch("/admin/reels/upload", { method: "POST", body: data });
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
-        setErrorVideo(
-          (body && typeof body === "object" && "error" in body
-            ? (body.error as { message?: string }).message
-            : undefined) ?? `El servidor respondió ${res.status}.`,
-        );
-      } else {
-        setVideoPath(body.data.path);
-      }
-    } catch {
-      setErrorVideo("No se pudo subir el vídeo.");
+    data.append("folder", "reels");
+
+    // Directo al backend: un reel puede pesar más que el tope de Vercel.
+    const res = await uploadDirect("/api/admin/uploads/video", data);
+    if (!res.ok) {
+      setErrorVideo(uploadError(res.body, res.status));
+    } else {
+      setVideoPath((res.body as { data: { path: string } }).data.path);
     }
     setSubiendoVideo(false);
   }
@@ -67,7 +61,7 @@ function ReelForm({ reel, onDone }: { reel: AdminReel | null; onDone?: () => voi
 
     const data = new FormData();
     data.append("file", file);
-    const result = await uploadImageAction("reels", data);
+    const result = await uploadImageDirect("reels", data);
 
     if (result.ok) {
       setPosterPath(result.path);

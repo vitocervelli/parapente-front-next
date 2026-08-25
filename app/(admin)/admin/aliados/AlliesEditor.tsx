@@ -6,12 +6,12 @@ import {
   deleteAllyAction,
   reorderAlliesAction,
   saveAllyAction,
-  uploadImageAction,
   type FormState,
 } from "../actions";
 import { MoveButtons, SortableList } from "../SortableList";
 import type { AdminAlly } from "@/lib/admin-api";
 import { BACKEND_URL } from "@/lib/api";
+import { uploadImageDirect } from "@/lib/upload-client";
 
 function SaveButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -38,7 +38,7 @@ function AllyForm({ ally, onDone }: { ally: AdminAlly | null; onDone?: () => voi
 
     const data = new FormData();
     data.append("file", file);
-    const result = await uploadImageAction("allies", data);
+    const result = await uploadImageDirect("allies", data);
 
     if (result.ok) {
       setLogoPath(result.path);

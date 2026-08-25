@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ds/Button";
 import type { Booking, Proof } from "@/lib/account-api";
 import { compressImage } from "@/lib/image";
+import { uploadDirect, uploadError } from "@/lib/upload-client";
 
 const TONO: Record<Proof["status"], string> = {
   pending: "res-estado--espera",
@@ -129,19 +130,14 @@ export function ProofPanel({ booking }: { booking: Booking }) {
         formData.append("files[]", await compressIfImage(file));
       }
 
-      const res = await fetch(`/cuenta/reservas/${booking.reference}/comprobante`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const body = await res.json().catch(() => null);
+      // Directo al backend, sin el tope de tamaño de las funciones de Vercel.
+      const res = await uploadDirect(
+        `/api/account/bookings/${booking.reference}/proofs`,
+        formData,
+      );
 
       if (!res.ok) {
-        const message =
-          body && typeof body === "object" && "error" in body
-            ? (body.error as { message?: string }).message
-            : undefined;
-        setError(message ?? `El servidor respondió ${res.status}.`);
+        setError(uploadError(res.body, res.status));
         return;
       }
 

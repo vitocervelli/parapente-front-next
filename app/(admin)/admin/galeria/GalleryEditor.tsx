@@ -6,12 +6,12 @@ import {
   deleteGalleryPhotoAction,
   reorderGalleryAction,
   saveGalleryPhotoAction,
-  uploadImageAction,
   type FormState,
 } from "../actions";
 import { MoveButtons, SortableList } from "../SortableList";
 import type { AdminGalleryPhoto } from "@/lib/admin-api";
 import { BACKEND_URL } from "@/lib/api";
+import { uploadImageDirect } from "@/lib/upload-client";
 
 function SaveButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -38,7 +38,7 @@ function PhotoForm({ photo, onDone }: { photo: AdminGalleryPhoto | null; onDone?
 
     const data = new FormData();
     data.append("file", file);
-    const result = await uploadImageAction("gallery", data);
+    const result = await uploadImageDirect("gallery", data);
 
     if (result.ok) {
       setImagePath(result.path);
