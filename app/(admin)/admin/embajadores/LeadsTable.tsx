@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { deleteInfluencerLeadAction, updateInfluencerLeadAction } from "../actions";
+import {
+  deleteInfluencerLeadAction,
+  deleteInfluencerLeadMediaAction,
+  updateInfluencerLeadAction,
+} from "../actions";
 import type { InfluencerLead } from "@/lib/admin-api";
 import {
   COLABORACIONES,
@@ -37,6 +41,98 @@ function RedLink({ social }: { social: InfluencerLead["socials"][number] }) {
       {etiqueta(REDES, social.network)}
       {seguidores && <span className="lead-red__n"> · {seguidores}</span>}
     </a>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+/**
+ * Fotos y vídeos de muestra del embajador. Se sirven por el proxy del panel
+ * (la cookie de sesión aporta el token); se pueden abrir, descargar o borrar.
+ */
+function Galeria({ lead }: { lead: InfluencerLead }) {
+  const [borrando, setBorrando] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  function borrar(mediaId: number, nombre: string) {
+    if (!window.confirm(`¿Borrar «${nombre}»? No se puede deshacer.`)) return;
+    setError(null);
+    setBorrando(mediaId);
+    startTransition(async () => {
+      const result = await deleteInfluencerLeadMediaAction(lead.id, mediaId);
+      if (!result.ok) setError(result.message ?? "No se pudo borrar el archivo.");
+      setBorrando(null);
+    });
+  }
+
+  return (
+    <>
+      <div className="mediag__grid lead-galeria">
+        {lead.media.map((m) => {
+          const src = `/admin/embajadores/${lead.id}/media/${m.id}`;
+          return (
+            <div
+              key={m.id}
+              className="mediag__item"
+              title={`${m.originalName} · ${formatBytes(m.sizeBytes)}`}
+            >
+              <a href={src} target="_blank" rel="noopener">
+                {m.kind === "image" ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- archivo privado vía proxy, next/image no aplica
+                  <img src={src} alt={m.originalName} loading="lazy" />
+                ) : (
+                  <>
+                    {/* #t=0.1: el navegador pinta el primer fotograma como miniatura */}
+                    <video src={`${src}#t=0.1`} preload="metadata" muted />
+                    <span className="mediag__play" aria-hidden="true">
+                      ▶
+                    </span>
+                  </>
+                )}
+              </a>
+              <a
+                className="mediag__descarga mediag__descarga--izq"
+                href={`${src}?download=1`}
+                download
+                title="Descargar"
+                aria-label={`Descargar ${m.originalName}`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <path d="M7 10l5 5 5-5" />
+                  <path d="M12 15V3" />
+                </svg>
+              </a>
+              <button
+                type="button"
+                className="mediag__borrar"
+                disabled={borrando === m.id}
+                aria-label={`Borrar ${m.originalName}`}
+                title="Borrar"
+                onClick={() => borrar(m.id, m.originalName)}
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {error && <p className="adm-hint adm-hint--error">{error}</p>}
+    </>
   );
 }
 
@@ -121,6 +217,10 @@ function Ficha({ lead, onBorrar }: { lead: InfluencerLead; onBorrar: () => void 
         <div className="lead-ficha__ancho">
           <dt>Comentarios</dt>
           <dd className="lead-ficha__texto">{lead.comments || "—"}</dd>
+        </div>
+        <div className="lead-ficha__ancho">
+          <dt>Muestras de contenido{lead.media.length > 0 ? ` (${lead.media.length})` : ""}</dt>
+          <dd>{lead.media.length > 0 ? <Galeria lead={lead} /> : "No subió archivos."}</dd>
         </div>
       </dl>
 
@@ -299,6 +399,14 @@ export function LeadsTable({ leads }: { leads: InfluencerLead[] }) {
                       {l.firstName} {l.lastName}
                     </button>
                     <span className="adm-row__personas">{l.age} años</span>
+                    {l.media.length > 0 && (
+                      <span
+                        className="adm-row__personas"
+                        title={`${l.media.length} ${l.media.length === 1 ? "archivo" : "archivos"} de muestra`}
+                      >
+                        📎 {l.media.length}
+                      </span>
+                    )}
                   </span>
                   <span className="adm-row__meta">
                     {l.email} · {l.phone}

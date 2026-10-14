@@ -15,6 +15,7 @@ import {
   deleteExtra,
   deleteGalleryPhoto,
   deleteInfluencerLead,
+  deleteInfluencerLeadMedia,
   deleteItem,
   deleteLocation,
   deleteReel,
@@ -685,6 +686,25 @@ export async function deleteInfluencerLeadAction(id: number): Promise<{ ok: bool
     const result = await deleteInfluencerLead(id);
     if (!result.ok) {
       return { ok: false, message: result.errors._ ?? "No se pudo borrar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/admin/embajadores");
+  return { ok: true };
+}
+
+/** Borra una foto o vídeo de muestra de una solicitud (y su fichero del disco). */
+export async function deleteInfluencerLeadMediaAction(
+  leadId: number,
+  mediaId: number,
+): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const result = await deleteInfluencerLeadMedia(leadId, mediaId);
+    if (!result.ok) {
+      return { ok: false, message: result.errors._ ?? "No se pudo borrar el archivo." };
     }
   } catch (error) {
     if (error instanceof UnauthorizedError) redirect("/admin/login");

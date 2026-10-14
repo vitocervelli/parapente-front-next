@@ -697,6 +697,8 @@ export type InfluencerLead = {
   status: "new" | "contacted" | "agreement" | "discarded";
   adminNote: string | null;
   createdAt: string;
+  /** Fotos y vídeos de muestra (ya optimizados) que subió con la solicitud. */
+  media: { id: number; kind: "image" | "video"; originalName: string; mimeType: string; sizeBytes: number }[];
 };
 
 /** Todas las solicitudes, las más recientes primero. */
@@ -717,6 +719,12 @@ export function updateInfluencerLead(
 
 export function deleteInfluencerLead(id: number) {
   return request<void>(`/api/admin/influencer-leads/${id}`, { method: "DELETE" });
+}
+
+export function deleteInfluencerLeadMedia(leadId: number, mediaId: number) {
+  return request<InfluencerLead>(`/api/admin/influencer-leads/${leadId}/media/${mediaId}`, {
+    method: "DELETE",
+  });
 }
 
 /** Alta de una cuenta del equipo (administrador) con correo y contraseña. */

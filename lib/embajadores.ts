@@ -75,7 +75,8 @@ export type EmbajadorInput = {
 };
 
 export type EmbajadorResult =
-  | { ok: true }
+  /** `id` y `uploadToken` permiten subir los archivos de muestra justo después. */
+  | { ok: true; id?: number; uploadToken?: string }
   | { ok: false; errors?: Record<string, string>; message?: string };
 
 /**
@@ -102,9 +103,13 @@ export async function enviarSolicitudEmbajador(input: EmbajadorInput): Promise<E
     };
   }
 
-  if (res.ok) return { ok: true };
-
   const body = await res.json().catch(() => null);
+
+  if (res.ok) {
+    // Si el backend detectó un bot no devuelve id ni token: se da por enviada.
+    const data = (body as { data?: { id?: number; uploadToken?: string } } | null)?.data;
+    return { ok: true, id: data?.id, uploadToken: data?.uploadToken };
+  }
 
   if (res.status === 422 && body && typeof body === "object" && "errors" in body) {
     return { ok: false, errors: body.errors as Record<string, string> };
@@ -116,4 +121,63 @@ export async function enviarSolicitudEmbajador(input: EmbajadorInput): Promise<E
       : undefined;
 
   return { ok: false, message: message ?? "No se pudo enviar la solicitud. Inténtalo de nuevo." };
+}
+
+// ── Archivos de muestra (fotos y vídeos) ─────────────────────────────────────
+
+/** Lo que admite el backend por solicitud y por archivo (ya optimizado). */
+export const MAX_ARCHIVOS = 8;
+export const MAX_FOTO_BYTES = 15 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+/** Lo que se deja ELEGIR: los vídeos grandes se recodifican antes de subir. */
+export const MAX_FOTO_ORIGINAL_BYTES = 40 * 1024 * 1024;
+export const MAX_VIDEO_ORIGINAL_BYTES = 1024 * 1024 * 1024;
+
+export const TIPOS_FOTO = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+export const TIPOS_VIDEO = ["video/mp4", "video/quicktime", "video/webm"];
+
+export function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+/**
+ * Sube UN archivo de muestra directo al backend con el token de subida. Usa
+ * XMLHttpRequest y no fetch porque fetch no informa del progreso de subida, y
+ * con un vídeo hay que poder enseñarlo. `onProgress` recibe un valor 0–1.
+ */
+export function subirArchivoEmbajador(
+  leadId: number,
+  uploadToken: string,
+  file: File,
+  onProgress?: (p: number) => void,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  return new Promise((resolve) => {
+    const data = new FormData();
+    data.append("token", uploadToken);
+    data.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${BACKEND_URL}/api/leads/influencer/${leadId}/media`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve({ ok: true });
+        return;
+      }
+      let message = `El servidor respondió ${xhr.status}.`;
+      try {
+        const body = JSON.parse(xhr.responseText) as { error?: { message?: string } };
+        if (body.error?.message) message = body.error.message;
+      } catch {
+        if (xhr.status === 413) message = "El archivo es demasiado pesado.";
+      }
+      resolve({ ok: false, message });
+    };
+    xhr.onerror = () => resolve({ ok: false, message: "Se cortó la conexión mientras se subía." });
+    xhr.send(data);
+  });
 }

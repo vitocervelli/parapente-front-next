@@ -541,6 +541,18 @@ a:hover {
 .emb-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 .emb-gracias { align-items: center; text-align: center; padding: 48px 32px; }
 .emb-gracias__icono { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: var(--yellow-500); font-size: 30px; color: var(--ink); }
+/* Progreso de la subida de archivos de muestra */
+.emb-subidas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; width: 100%; text-align: left; }
+.emb-subida { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; background: var(--gray-100); }
+.emb-subida__nombre { font-size: 16px; font-weight: 600; color: var(--gray-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emb-subida__estado { font-size: 15px; color: var(--gray-500); white-space: nowrap; }
+.emb-subida--ok .emb-subida__estado { color: #1a6b34; font-weight: 600; }
+.emb-subida--error .emb-subida__estado { grid-column: 1 / -1; white-space: normal; color: var(--danger); font-weight: 600; }
+.emb-subida__barra { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--gray-200); overflow: hidden; }
+.emb-subida__barra span { display: block; height: 100%; background: var(--primary); transition: width 200ms linear; }
+.emb-subida--ok .emb-subida__barra span { background: #1a6b34; }
+.emb-subida--error .emb-subida__barra { display: none; }
+.emb-gracias__fallos { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
 .emb-gracias__nos-vemos { margin: 0; font-family: var(--font-script); font-size: 36px; color: var(--primary); transform: rotate(-3deg); }
 
 .visit { background: var(--white); padding: 110px 32px; }

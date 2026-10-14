@@ -1,13 +1,32 @@
 "use client";
 
-import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { MuestrasPicker, type Muestra } from "./MuestrasPicker";
 import { Button } from "@/components/ds/Button";
 import { Input } from "@/components/ds/Input";
-import { COLABORACIONES, NICHOS, REDES, enviarSolicitudEmbajador } from "@/lib/embajadores";
+import {
+  COLABORACIONES,
+  MAX_FOTO_BYTES,
+  MAX_VIDEO_BYTES,
+  NICHOS,
+  REDES,
+  enviarSolicitudEmbajador,
+  formatBytes,
+  subirArchivoEmbajador,
+} from "@/lib/embajadores";
+import { compressImage } from "@/lib/image";
+import { optimizeVideo } from "@/lib/video";
 
 const MAX_REDES = 10;
 
 type Fila = { id: number; network: string; url: string; followers: string };
+
+type EstadoSubida =
+  | { fase: "pendiente" }
+  | { fase: "optimizando"; progreso: number | null }
+  | { fase: "subiendo"; progreso: number }
+  | { fase: "ok"; bytes: number }
+  | { fase: "error"; mensaje: string };
 
 /** Chips de selección múltiple (nicho, tipo de colaboración). */
 function Chips({
@@ -40,10 +59,68 @@ function Chips({
   );
 }
 
+function etiquetaEstado(e: EstadoSubida | undefined): string {
+  if (!e || e.fase === "pendiente") return "En cola";
+  if (e.fase === "optimizando")
+    return e.progreso === null ? "Optimizando…" : `Optimizando… ${Math.round(e.progreso * 100)}%`;
+  if (e.fase === "subiendo") return `Subiendo… ${Math.round(e.progreso * 100)}%`;
+  if (e.fase === "ok") return `Subido · ${formatBytes(e.bytes)}`;
+  return e.mensaje;
+}
+
+function porcentaje(e: EstadoSubida | undefined): number {
+  if (!e) return 0;
+  if (e.fase === "ok") return 100;
+  // La optimización ocupa la primera mitad de la barra y la subida la segunda.
+  if (e.fase === "optimizando") return Math.round((e.progreso ?? 0) * 50);
+  if (e.fase === "subiendo") return 50 + Math.round(e.progreso * 50);
+  return 0;
+}
+
+/**
+ * Deja el archivo listo para subir: las fotos se reducen a 2000 px en JPEG (sin
+ * EXIF/GPS) y los vídeos se recodifican a MP4 720p. Lanza un Error con un
+ * mensaje legible si, aun así, no cabe o no se puede usar.
+ */
+async function preparar(m: Muestra, onProgress: (p: number | null) => void): Promise<File> {
+  if (m.kind === "image") {
+    onProgress(null);
+    const heic = /heic|heif/i.test(m.file.type) || /\.(heic|heif)$/i.test(m.file.name);
+    const lista = await compressImage(m.file, {
+      maxDimension: 2000,
+      quality: 0.82,
+      // HEIC siempre se convierte (el servidor no lo admite); el resto, si pesa.
+      skipUnderBytes: heic ? 0 : 500_000,
+    });
+    if (/heic|heif/i.test(lista.type) || /\.(heic|heif)$/i.test(lista.name)) {
+      throw new Error("Este navegador no puede convertir fotos HEIC. Súbela en JPG.");
+    }
+    if (lista.size > MAX_FOTO_BYTES) {
+      throw new Error(
+        `La foto pesa ${formatBytes(lista.size)}; el máximo es ${formatBytes(MAX_FOTO_BYTES)}.`,
+      );
+    }
+    return lista;
+  }
+
+  const lista = await optimizeVideo(m.file, onProgress);
+  if (lista.size > MAX_VIDEO_BYTES) {
+    throw new Error(
+      `El vídeo pesa ${formatBytes(lista.size)} y el máximo es ${formatBytes(MAX_VIDEO_BYTES)}. Prueba con un fragmento más corto.`,
+    );
+  }
+  return lista;
+}
+
 /**
  * Formulario de embajadores: datos de contacto, redes con su enlace y
- * seguidores, temática, tipo de colaboración y comentarios. Es controlado para
- * no perder nada si el servidor devuelve errores.
+ * seguidores, temática, tipo de colaboración, comentarios y, opcionalmente,
+ * fotos y vídeos de muestra. Es controlado para no perder nada si el servidor
+ * devuelve errores.
+ *
+ * Al enviar: 1) se crea la solicitud (devuelve un token de subida temporal);
+ * 2) cada archivo se optimiza en el dispositivo y se sube directo al backend,
+ * uno a uno, con su progreso.
  */
 export function EmbajadoresForm() {
   const siguienteId = useRef(1);
@@ -61,13 +138,24 @@ export function EmbajadoresForm() {
   ]);
   const [niches, setNiches] = useState<string[]>([]);
   const [collabs, setCollabs] = useState<string[]>([]);
+  const [muestras, setMuestras] = useState<Muestra[]>([]);
   const [comments, setComments] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
-  const [enviado, setEnviado] = useState(false);
+  const [fase, setFase] = useState<"form" | "subiendo" | "hecho">("form");
+  const [subidas, setSubidas] = useState<Record<number, EstadoSubida>>({});
+  const credenciales = useRef<{ id: number; token: string } | null>(null);
+
+  // Mientras se suben archivos, avisa antes de cerrar o salir de la página.
+  useEffect(() => {
+    if (fase !== "subiendo") return;
+    const avisar = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [fase]);
 
   /** Al corregir un campo, su error desaparece sin esperar a reenviar. */
   const limpiar = (campo: string) =>
@@ -113,6 +201,45 @@ export function EmbajadoresForm() {
     return e;
   }
 
+  /** Optimiza y sube, una a una, las muestras indicadas. */
+  async function subirMuestras(lista: Muestra[]) {
+    const cred = credenciales.current;
+    if (!cred) return;
+
+    const fijar = (id: number, estado: EstadoSubida) =>
+      setSubidas((prev) => ({ ...prev, [id]: estado }));
+
+    setFase("subiendo");
+    lista.forEach((m) => fijar(m.id, { fase: "pendiente" }));
+
+    for (const m of lista) {
+      let archivo: File;
+      try {
+        fijar(m.id, { fase: "optimizando", progreso: null });
+        archivo = await preparar(m, (p) => fijar(m.id, { fase: "optimizando", progreso: p }));
+      } catch (e) {
+        fijar(m.id, {
+          fase: "error",
+          mensaje: e instanceof Error ? e.message : "No se pudo preparar.",
+        });
+        continue;
+      }
+
+      fijar(m.id, { fase: "subiendo", progreso: 0 });
+      const result = await subirArchivoEmbajador(cred.id, cred.token, archivo, (p) =>
+        fijar(m.id, { fase: "subiendo", progreso: p }),
+      );
+      fijar(
+        m.id,
+        result.ok
+          ? { fase: "ok", bytes: archivo.size }
+          : { fase: "error", mensaje: result.message },
+      );
+    }
+
+    setFase("hecho");
+  }
+
   function enviar(ev: FormEvent) {
     ev.preventDefault();
     setMessage(null);
@@ -147,18 +274,60 @@ export function EmbajadoresForm() {
         website,
       });
 
-      if (result.ok) {
-        setEnviado(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+      if (!result.ok) {
+        setErrors(result.errors ?? {});
+        setMessage(result.message ?? "Revisa los campos marcados en rojo.");
         return;
       }
 
-      setErrors(result.errors ?? {});
-      setMessage(result.message ?? "Revisa los campos marcados en rojo.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      if (muestras.length > 0 && result.id && result.uploadToken) {
+        credenciales.current = { id: result.id, token: result.uploadToken };
+        await subirMuestras(muestras);
+      } else {
+        setFase("hecho");
+      }
     });
   }
 
-  if (enviado) {
+  const fallidas = muestras.filter((m) => subidas[m.id]?.fase === "error");
+  const subidasOk = muestras.filter((m) => subidas[m.id]?.fase === "ok").length;
+
+  /** Lista de archivos con su estado y barra de progreso. */
+  const listaProgreso = (
+    <ul className="emb-subidas">
+      {muestras.map((m) => {
+        const e = subidas[m.id];
+        return (
+          <li key={m.id} className={`emb-subida emb-subida--${e?.fase ?? "pendiente"}`}>
+            <span className="emb-subida__nombre">
+              {m.kind === "video" ? "🎬" : "📷"} {m.file.name}
+            </span>
+            <span className="emb-subida__estado">{etiquetaEstado(e)}</span>
+            <span className="emb-subida__barra" aria-hidden="true">
+              <span style={{ width: `${porcentaje(e)}%` }} />
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  if (fase === "subiendo") {
+    return (
+      <div className="consulta__form">
+        <div className="consulta__form-title">Subiendo tus archivos…</div>
+        <p className="consulta__form-intro">
+          Tu solicitud ya está guardada. Ahora optimizamos y subimos tus fotos y vídeos; los vídeos
+          pueden tardar un poco. <strong>No cierres esta página.</strong>
+        </p>
+        {listaProgreso}
+      </div>
+    );
+  }
+
+  if (fase === "hecho") {
     return (
       <div className="consulta__form emb-gracias">
         <span className="emb-gracias__icono" aria-hidden="true">
@@ -166,9 +335,26 @@ export function EmbajadoresForm() {
         </span>
         <div className="consulta__form-title">¡Gracias, {firstName.trim()}!</div>
         <p className="consulta__form-intro">
-          Recibimos tu solicitud. Revisaremos tu perfil con calma y, si encaja con lo que buscamos,
-          te escribiremos al correo o al teléfono que nos dejaste.
+          Recibimos tu solicitud
+          {subidasOk > 0
+            ? ` y ${subidasOk} ${subidasOk === 1 ? "archivo de muestra" : "archivos de muestra"}`
+            : ""}
+          . Revisaremos tu perfil con calma y, si encaja con lo que buscamos, te escribiremos al
+          correo o al teléfono que nos dejaste.
         </p>
+        {fallidas.length > 0 && (
+          <div className="emb-gracias__fallos">
+            <p className="acceso__error">
+              {fallidas.length === 1
+                ? "Un archivo no se pudo subir:"
+                : `${fallidas.length} archivos no se pudieron subir:`}
+            </p>
+            {listaProgreso}
+            <Button size="md" onClick={() => void subirMuestras(fallidas)}>
+              Reintentar
+            </Button>
+          </div>
+        )}
         <p className="emb-gracias__nos-vemos">Nos vemos en el aire.</p>
       </div>
     );
@@ -343,6 +529,14 @@ export function EmbajadoresForm() {
           seleccion={collabs}
           onToggle={(k) => toggle(collabs, setCollabs, k)}
         />
+      </div>
+      <div className="emb-grupo">
+        <span className="pbv-field__label">Muestra de tu contenido (opcional)</span>
+        <p className="emb-help">
+          Si quieres, súbenos algunas fotos o vídeos que hayas creado: nos ayudan a conocer tu
+          estilo.
+        </p>
+        <MuestrasPicker muestras={muestras} onChange={setMuestras} disabled={pending} />
       </div>
 
       <Input
