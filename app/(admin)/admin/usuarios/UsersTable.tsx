@@ -3,21 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { AdminUser } from "@/lib/admin-api";
-
-/** Minúsculas y sin tildes: "Pérez" encuentra "perez" y al revés. */
-function normalizar(texto: string): string {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "");
-}
-
-/** Todo lo buscable de un usuario, en un solo texto normalizado. */
-function pajar(u: AdminUser): string {
-  return normalizar(
-    [u.fullName, u.email, u.phone, u.idNumber].filter(Boolean).join(" "),
-  );
-}
+import { coincide, pajar } from "@/lib/search";
 
 function formatFecha(iso: string): string {
   const fecha = new Date(iso);
@@ -33,16 +19,14 @@ function formatFecha(iso: string): string {
 export function UsersTable({ usuarios }: { usuarios: AdminUser[] }) {
   const [busqueda, setBusqueda] = useState("");
 
-  const pajares = useMemo(() => new Map(usuarios.map((u) => [u.id, pajar(u)])), [usuarios]);
+  const pajares = useMemo(
+    () => new Map(usuarios.map((u) => [u.id, pajar([u.fullName, u.email, u.phone, u.idNumber])])),
+    [usuarios],
+  );
 
-  const terminos = normalizar(busqueda).split(/\s+/).filter(Boolean);
-  const visibles =
-    terminos.length === 0
-      ? usuarios
-      : usuarios.filter((u) => {
-          const heno = pajares.get(u.id) ?? "";
-          return terminos.every((t) => heno.includes(t));
-        });
+  const visibles = busqueda.trim()
+    ? usuarios.filter((u) => coincide(pajares.get(u.id) ?? "", busqueda))
+    : usuarios;
 
   return (
     <>

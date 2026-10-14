@@ -14,6 +14,7 @@ import {
   deleteAlly,
   deleteExtra,
   deleteGalleryPhoto,
+  deleteInfluencerLead,
   deleteItem,
   deleteLocation,
   deleteReel,
@@ -31,6 +32,8 @@ import {
   updateAlly,
   updateExtra,
   updateGalleryPhoto,
+  updateInfluencerLead,
+  type InfluencerLead,
   updateReel,
   updateItem,
   updateLocation,
@@ -653,4 +656,41 @@ export async function saveSettingsAction(
   revalidatePath("/reserva");
   revalidatePath("/admin/ajustes");
   return { message: "Ajustes guardados." };
+}
+
+// ── Embajadores ──────────────────────────────────────────────────────────────
+
+/** Guarda el estado y la nota interna de una solicitud de embajador. */
+export async function updateInfluencerLeadAction(
+  id: number,
+  input: { status: InfluencerLead["status"]; adminNote: string },
+): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const result = await updateInfluencerLead(id, { status: input.status, adminNote: input.adminNote });
+    if (!result.ok) {
+      return { ok: false, message: result.errors.status ?? result.errors._ ?? "No se pudo guardar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/admin/embajadores");
+  return { ok: true };
+}
+
+/** Borra una solicitud de embajador (queda registrado en la auditoría). */
+export async function deleteInfluencerLeadAction(id: number): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const result = await deleteInfluencerLead(id);
+    if (!result.ok) {
+      return { ok: false, message: result.errors._ ?? "No se pudo borrar." };
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) redirect("/admin/login");
+    throw error;
+  }
+
+  revalidatePath("/admin/embajadores");
+  return { ok: true };
 }

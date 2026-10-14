@@ -679,6 +679,46 @@ export async function getUser(id: number): Promise<AdminUserDetail | null> {
   return res.ok ? res.data : null;
 }
 
+// ── Embajadores (formulario oculto /embajadores) ─────────────────────────────
+
+export type InfluencerLead = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  age: number;
+  email: string;
+  phone: string;
+  city: string | null;
+  country: string | null;
+  socials: { network: string; url: string; followers: number | null }[];
+  niches: string[];
+  collaborationTypes: string[];
+  comments: string | null;
+  status: "new" | "contacted" | "agreement" | "discarded";
+  adminNote: string | null;
+  createdAt: string;
+};
+
+/** Todas las solicitudes, las más recientes primero. */
+export async function listInfluencerLeads(): Promise<InfluencerLead[]> {
+  const res = await request<InfluencerLead[]>("/api/admin/influencer-leads");
+  return res.ok ? res.data : [];
+}
+
+export function updateInfluencerLead(
+  id: number,
+  input: { status?: InfluencerLead["status"]; adminNote?: string | null },
+) {
+  return request<InfluencerLead>(`/api/admin/influencer-leads/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteInfluencerLead(id: number) {
+  return request<void>(`/api/admin/influencer-leads/${id}`, { method: "DELETE" });
+}
+
 /** Alta de una cuenta del equipo (administrador) con correo y contraseña. */
 export type NewAdminInput = {
   email: string;
