@@ -60,7 +60,7 @@ const steps = [
     offset: true,
     position: "center 60%",
     title: "Sube al despegue en 4x4",
-    desc: "Montaña arriba en nuestros Toyota clásicos mientras el piloto revisa el equipo homologado.",
+    desc: "Montaña arriba en nuestros Toyota clásicos mientras el piloto prepara el equipo.",
   },
   {
     image: "/uploads/IMG_5605.JPG.jpeg",
@@ -79,7 +79,7 @@ const igPosts = [
   "/uploads/IMG_4432.JPG.jpeg",
 ];
 
-const trust = ["Pilotos certificados", "Equipo homologado", "Seguro incluido", "+500 vuelos seguros"];
+const trust = ["Pilotos certificados", "Sin experiencia previa", "Reprogramación sin costo", "+500 vuelos seguros"];
 
 export default async function Home() {
   const [services, cifras, locations, aliados, reels] = await Promise.all([

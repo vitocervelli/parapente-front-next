@@ -38,7 +38,7 @@ const regularBrush = localFont({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://parapente-front-next.vercel.app";
 const TITULO = "Parapente Bella Vista — Vuela en Nirgua, La Guaira y Mérida";
 const DESCRIPCION =
-  "Vuelos tándem en parapente, paseos a caballo y 4x4 en Nirgua, Yaracuy. Pilotos certificados, equipo homologado y seguro incluido. Atrévete a tocar las nubes con tus manos.";
+  "Vuelos tándem en parapente, paseos a caballo y 4x4 en Nirgua, Yaracuy. Pilotos certificados y sin necesidad de experiencia previa. Atrévete a tocar las nubes con tus manos.";
 
 export const metadata: Metadata = {
   // Base para resolver a URL absoluta la imagen social (opengraph-image /

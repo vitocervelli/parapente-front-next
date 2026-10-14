@@ -31,11 +31,11 @@ const faq = [
   },
   {
     q: "¿Qué llevo?",
-    a: "Ropa cómoda, calzado cerrado (deportivo o botas), protector solar y lentes de sol. Nosotros ponemos casco, arnés y todo el equipo homologado, revisado a diario.",
+    a: "Ropa cómoda, calzado cerrado (deportivo o botas), protector solar y lentes de sol. Nosotros ponemos casco, arnés y todo el equipo de vuelo, revisado a diario.",
   },
   {
     q: "¿Es seguro?",
-    a: "Sí. Pilotos certificados, equipo homologado y seguro de accidentes incluido en cada vuelo. En más de 500 vuelos, nuestra prioridad siempre es la misma: que aterrices con ganas de repetir.",
+    a: "Sí. Nuestros pilotos están certificados, revisamos el equipo a diario y solo volamos con condiciones de viento seguras. En más de 500 vuelos, nuestra prioridad siempre es la misma: que aterrices con ganas de repetir.",
   },
   {
     q: "¿Y el clima?",
